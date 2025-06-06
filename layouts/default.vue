@@ -8,8 +8,8 @@ const route = useRoute();
             ? 'var(--background-image-home)'
             : 'var(--background-image-default)'
     }">
-        <header class="bg-white/70 shadow p-4 text-center text-xl font-semibold text-indigo-700 backdrop-blur-sm">
-            My Nuxt Site
+        <header class="bg-white/70 shadow p-4 text-center text-xl font-semibold text-green-700 backdrop-blur-sm">
+            Jesse's Leafy Feasts
         </header>
 
         <main class="p-6">

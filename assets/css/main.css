@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
 @theme {
-  --background-image-home: url('/background-home.png');
+  --background-image-home: url('/background.png');
   --background-image-default: url('/background.png');
 }

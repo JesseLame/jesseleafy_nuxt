@@ -1,5 +1,5 @@
 import process from 'node:process';globalThis._importMeta_={url:import.meta.url,env:process.env};import { tmpdir } from 'node:os';
-import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, getRequestURL, getResponseHeader, getQuery as getQuery$1, readBody, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatus, createError, getRouterParam, getResponseStatusText } from 'file:///Users/jesselamerigts/WebDev/jesseleafy_nuxt/node_modules/h3/dist/index.mjs';
+import { defineEventHandler, handleCacheHeaders, splitCookiesString, createEvent, fetchWithEvent, isEvent, eventHandler, setHeaders, sendRedirect, proxyRequest, getRequestHeader, setResponseHeaders, setResponseStatus, send, getRequestHeaders, setResponseHeader, getRequestURL, getResponseHeader, getQuery as getQuery$1, readBody, getRouterParam, setHeader, getResponseStatus, createError, createApp, createRouter as createRouter$1, toNodeListener, lazyEventHandler, getResponseStatusText } from 'file:///Users/jesselamerigts/WebDev/jesseleafy_nuxt/node_modules/h3/dist/index.mjs';
 import { Server } from 'node:http';
 import { resolve, dirname, join } from 'node:path';
 import nodeCrypto from 'node:crypto';
@@ -32,6 +32,8 @@ import { isVNode, toValue, isRef } from 'file:///Users/jesselamerigts/WebDev/jes
 import { createHead as createHead$1, propsToString, renderSSRHead } from 'file:///Users/jesselamerigts/WebDev/jesseleafy_nuxt/node_modules/unhead/dist/server.mjs';
 import { DeprecationsPlugin, PromisesPlugin, TemplateParamsPlugin, AliasSortingPlugin } from 'file:///Users/jesselamerigts/WebDev/jesseleafy_nuxt/node_modules/unhead/dist/plugins.mjs';
 import { walkResolver } from 'file:///Users/jesselamerigts/WebDev/jesseleafy_nuxt/node_modules/unhead/dist/utils.mjs';
+import { isAbsolute } from 'file:///Users/jesselamerigts/WebDev/jesseleafy_nuxt/node_modules/pathe/dist/index.mjs';
+import localAdapter from 'file:///Users/jesselamerigts/WebDev/jesseleafy_nuxt/node_modules/db0/dist/connectors/better-sqlite3.mjs';
 
 const serverAssets = [{"baseName":"server","dir":"/Users/jesselamerigts/WebDev/jesseleafy_nuxt/server/assets"}];
 
@@ -632,6 +634,15 @@ const _inlineRuntimeConfig = {
       "/__nuxt_error": {
         "cache": false
       },
+      "/__nuxt_content/**": {
+        "robots": false
+      },
+      "/__nuxt_content/content/sql_dump": {
+        "prerender": true
+      },
+      "/__nuxt_content/recipes/sql_dump": {
+        "prerender": true
+      },
       "/_nuxt/builds/meta/**": {
         "headers": {
           "cache-control": "public, max-age=31536000, immutable"
@@ -644,7 +655,40 @@ const _inlineRuntimeConfig = {
       }
     }
   },
-  "public": {}
+  "public": {
+    "content": {
+      "wsUrl": "ws://localhost:4000/"
+    },
+    "mdc": {
+      "components": {
+        "prose": true,
+        "map": {}
+      },
+      "headings": {
+        "anchorLinks": {
+          "h1": false,
+          "h2": true,
+          "h3": true,
+          "h4": true,
+          "h5": false,
+          "h6": false
+        }
+      }
+    }
+  },
+  "content": {
+    "databaseVersion": "v3.5.0",
+    "version": "3.5.1",
+    "database": {
+      "type": "sqlite",
+      "filename": "./contents.sqlite"
+    },
+    "localDatabase": {
+      "type": "sqlite",
+      "filename": "/Users/jesselamerigts/WebDev/jesseleafy_nuxt/.data/content/contents.sqlite"
+    },
+    "integrityCheck": true
+  }
 };
 const envOptions = {
   prefix: "NITRO_",
@@ -1427,11 +1471,441 @@ async function getIslandContext(event) {
   return ctx;
 }
 
+const _N3emdl = eventHandler(async (event) => {
+  const collection = getRouterParam(event, "collection");
+  setHeader(event, "Content-Type", "text/plain");
+  const data = await useStorage().getItem(`build:content:database.compressed.mjs`) || "";
+  if (data) {
+    const lineStart = `export const ${collection} = "`;
+    const content = String(data).split("\n").find((line) => line.startsWith(lineStart));
+    if (content) {
+      return content.substring(lineStart.length, content.length - 1);
+    }
+  }
+  return await import('file:///Users/jesselamerigts/WebDev/jesseleafy_nuxt/.nuxt/content/database.compressed.mjs').then((m) => m[collection]);
+});
+
+async function decompressSQLDump(base64Str, compressionType = "gzip") {
+  const binaryData = Uint8Array.from(atob(base64Str), (c) => c.charCodeAt(0));
+  const response = new Response(new Blob([binaryData]));
+  const decompressedStream = response.body?.pipeThrough(new DecompressionStream(compressionType));
+  const decompressedText = await new Response(decompressedStream).text();
+  return decompressedText.split("\n");
+}
+
+const checksums = {
+  "content": "v3.5.0--vIi8oSaN7KuOIis5qC4vjUpVRwRW1irRk_y9GXfL3qs",
+  "recipes": "v3.5.0--nHJtuMdQuIExx2xq1Kdlwm-XIi4z8Ubf4Eg3noT4TNI"
+};
+const checksumsStructure = {
+  "content": "bgIYhpjRuV8zbHJE_CfelwKpJ_Td6YuGJwixiek8lmI",
+  "recipes": "nHJtuMdQuIExx2xq1Kdlwm-XIi4z8Ubf4Eg3noT4TNI"
+};
+const tables = {
+  "content": "_content_content",
+  "recipes": "_content_recipes",
+  "info": "_content_info"
+};
+const contentManifest = {
+  "content": {
+    "type": "page",
+    "fields": {
+      "id": "string",
+      "stem": "string",
+      "extension": "string",
+      "meta": "json",
+      "path": "string",
+      "title": "string",
+      "description": "string",
+      "seo": "json",
+      "body": "json",
+      "navigation": "json"
+    }
+  },
+  "recipes": {
+    "type": "page",
+    "fields": {
+      "id": "string",
+      "stem": "string",
+      "extension": "string",
+      "meta": "json",
+      "path": "string",
+      "title": "string",
+      "description": "string",
+      "seo": "json",
+      "body": "json",
+      "navigation": "json"
+    }
+  },
+  "info": {
+    "type": "data",
+    "fields": {}
+  }
+};
+
+async function fetchDatabase(event, collection) {
+  return await $fetch(`/__nuxt_content/${collection}/sql_dump`, {
+    context: event ? { cloudflare: event.context.cloudflare } : {},
+    responseType: "text",
+    headers: { "content-type": "text/plain" },
+    query: { v: checksums[String(collection)], t: Date.now()  }
+  });
+}
+
+function refineContentFields(sql, doc) {
+  const fields = findCollectionFields(sql);
+  const item = { ...doc };
+  for (const key in item) {
+    if (fields[key] === "json" && item[key] && item[key] !== "undefined") {
+      item[key] = JSON.parse(item[key]);
+    }
+    if (fields[key] === "boolean" && item[key] !== "undefined") {
+      item[key] = Boolean(item[key]);
+    }
+  }
+  for (const key in item) {
+    if (item[key] === "NULL") {
+      item[key] = void 0;
+    }
+  }
+  return item;
+}
+function findCollectionFields(sql) {
+  const table = sql.match(/FROM\s+(\w+)/);
+  if (!table) {
+    return {};
+  }
+  const info = contentManifest[getCollectionName(table[1])];
+  return info?.fields || {};
+}
+function getCollectionName(table) {
+  return table.replace(/^_content_/, "");
+}
+
+let db;
+function loadDatabaseAdapter(config) {
+  const { database, localDatabase } = config;
+  if (!db) {
+    {
+      db = localAdapter(refineDatabaseConfig(localDatabase));
+    }
+  }
+  return {
+    all: async (sql, params = []) => {
+      return db.prepare(sql).all(...params).then((result) => (result || []).map((item) => refineContentFields(sql, item)));
+    },
+    first: async (sql, params = []) => {
+      return db.prepare(sql).get(...params).then((item) => item ? refineContentFields(sql, item) : item);
+    },
+    exec: async (sql, params = []) => {
+      return db.prepare(sql).run(...params);
+    }
+  };
+}
+const checkDatabaseIntegrity = {};
+const integrityCheckPromise = {};
+async function checkAndImportDatabaseIntegrity(event, collection, config) {
+  if (checkDatabaseIntegrity[String(collection)] !== false) {
+    checkDatabaseIntegrity[String(collection)] = false;
+    integrityCheckPromise[String(collection)] = integrityCheckPromise[String(collection)] || _checkAndImportDatabaseIntegrity(event, collection, checksums[String(collection)], checksumsStructure[String(collection)], config).then((isValid) => {
+      checkDatabaseIntegrity[String(collection)] = !isValid;
+    }).catch((error) => {
+      console.error("Database integrity check failed", error);
+      checkDatabaseIntegrity[String(collection)] = true;
+      integrityCheckPromise[String(collection)] = null;
+    });
+  }
+  if (integrityCheckPromise[String(collection)]) {
+    await integrityCheckPromise[String(collection)];
+  }
+}
+async function _checkAndImportDatabaseIntegrity(event, collection, integrityVersion, structureIntegrityVersion, config) {
+  const db2 = loadDatabaseAdapter(config);
+  const before = await db2.first(`SELECT * FROM ${tables.info} WHERE id = ?`, [`checksum_${collection}`]).catch(() => null);
+  if (before?.version && !String(before.version)?.startsWith(`${config.databaseVersion}--`)) {
+    await db2.exec(`DROP TABLE IF EXISTS ${tables.info}`);
+    before.version = "";
+  }
+  const unchangedStructure = before?.structureVersion === structureIntegrityVersion;
+  if (before?.version) {
+    if (before.version === integrityVersion) {
+      if (before.ready) {
+        return true;
+      }
+      await waitUntilDatabaseIsReady(db2, collection);
+      return true;
+    }
+    await db2.exec(`DELETE FROM ${tables.info} WHERE id = ?`, [`checksum_${collection}`]);
+    if (!unchangedStructure) {
+      await db2.exec(`DROP TABLE IF EXISTS ${tables[collection]}`);
+    }
+  }
+  const dump = await loadDatabaseDump(event, collection).then(decompressSQLDump);
+  const dumpLinesHash = dump.map((row) => row.split(" -- ").pop());
+  let hashesInDb = /* @__PURE__ */ new Set();
+  if (unchangedStructure) {
+    const hashListFromTheDump = new Set(dumpLinesHash);
+    const hashesInDbRecords = await db2.all(`SELECT __hash__ FROM ${tables[collection]}`).catch(() => []);
+    hashesInDb = new Set(hashesInDbRecords.map((r) => r.__hash__));
+    const hashesToDelete = hashesInDb.difference(hashListFromTheDump);
+    if (hashesToDelete.size) {
+      await db2.exec(`DELETE FROM ${tables[collection]} WHERE __hash__ IN (${Array(hashesToDelete.size).fill("?").join(",")})`, Array.from(hashesToDelete));
+    }
+  }
+  await dump.reduce(async (prev, sql, index) => {
+    await prev;
+    const hash = dumpLinesHash[index];
+    const statement = sql.substring(0, sql.length - hash.length - 4);
+    if (unchangedStructure) {
+      if (hash === "structure") {
+        return Promise.resolve();
+      }
+      if (hashesInDb.has(hash)) {
+        return Promise.resolve();
+      }
+    }
+    await db2.exec(statement).catch((err) => {
+      const message = err.message || "Unknown error";
+      console.error(`Failed to execute SQL ${sql}: ${message}`);
+    });
+  }, Promise.resolve());
+  const after = await db2.first(`SELECT version FROM ${tables.info} WHERE id = ?`, [`checksum_${collection}`]).catch(() => ({ version: "" }));
+  return after?.version === integrityVersion;
+}
+const REQUEST_TIMEOUT = 90;
+async function waitUntilDatabaseIsReady(db2, collection) {
+  let iterationCount = 0;
+  let interval;
+  await new Promise((resolve, reject) => {
+    interval = setInterval(async () => {
+      const row = await db2.first(`SELECT ready FROM ${tables.info} WHERE id = ?`, [`checksum_${collection}`]).catch(() => ({ ready: true }));
+      if (row?.ready) {
+        clearInterval(interval);
+        resolve(0);
+      }
+      if (iterationCount++ > REQUEST_TIMEOUT) {
+        clearInterval(interval);
+        reject(new Error("Waiting for another database initialization timed out"));
+      }
+    }, 1e3);
+  }).catch((e) => {
+    throw e;
+  }).finally(() => {
+    if (interval) {
+      clearInterval(interval);
+    }
+  });
+}
+async function loadDatabaseDump(event, collection) {
+  return await fetchDatabase(event, String(collection)).catch((e) => {
+    console.error("Failed to fetch compressed dump", e);
+    return "";
+  });
+}
+function refineDatabaseConfig(config) {
+  if (config.type === "d1") {
+    return { ...config, bindingName: config.bindingName || config.binding };
+  }
+  if (config.type === "sqlite") {
+    const _config = { ...config };
+    if (config.filename === ":memory:") {
+      return { name: "memory" };
+    }
+    if ("filename" in config) {
+      const filename = isAbsolute(config?.filename || "") || config?.filename === ":memory:" ? config?.filename : new URL(config.filename, globalThis._importMeta_.url).pathname;
+      _config.path = process.platform === "win32" && filename.startsWith("/") ? filename.slice(1) : filename;
+    }
+    return _config;
+  }
+  return config;
+}
+
+const SQL_COMMANDS = /SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|\$/i;
+const SQL_COUNT_REGEX = /COUNT\((DISTINCT )?([a-z_]\w+|\*)\)/i;
+const SQL_SELECT_REGEX = /^SELECT (.*) FROM (\w+)( WHERE .*)? ORDER BY (["\w,\s]+) (ASC|DESC)( LIMIT \d+)?( OFFSET \d+)?$/;
+function assertSafeQuery(sql, collection) {
+  if (!sql) {
+    throw new Error("Invalid query");
+  }
+  const cleanedupQuery = cleanupQuery(sql);
+  if (cleanedupQuery !== sql) {
+    throw new Error("Invalid query");
+  }
+  const match = sql.match(SQL_SELECT_REGEX);
+  if (!match) {
+    throw new Error("Invalid query");
+  }
+  const [_, select, from, where, orderBy, order, limit, offset] = match;
+  const columns = select.trim().split(", ");
+  if (columns.length === 1) {
+    if (columns[0] !== "*" && !columns[0].match(SQL_COUNT_REGEX) && !columns[0].match(/^"[a-z_]\w+"$/i)) {
+      throw new Error("Invalid query");
+    }
+  } else if (!columns.every((column) => column.match(/^"[a-z_]\w+"$/i))) {
+    throw new Error("Invalid query");
+  }
+  if (from !== `_content_${collection}`) {
+    throw new Error("Invalid query");
+  }
+  if (where) {
+    if (!where.startsWith(" WHERE (") || !where.endsWith(")")) {
+      throw new Error("Invalid query");
+    }
+    const noString = cleanupQuery(where, { removeString: true });
+    if (noString.match(SQL_COMMANDS)) {
+      throw new Error("Invalid query");
+    }
+  }
+  const _order = (orderBy + " " + order).split(", ");
+  if (!_order.every((column) => column.match(/^("[a-zA-Z_]+"|[a-zA-Z_]+) (ASC|DESC)$/))) {
+    throw new Error("Invalid query");
+  }
+  if (limit !== void 0 && !limit.match(/^ LIMIT \d+$/)) {
+    throw new Error("Invalid query");
+  }
+  if (offset !== void 0 && !offset.match(/^ OFFSET \d+$/)) {
+    throw new Error("Invalid query");
+  }
+  return true;
+}
+function cleanupQuery(query, options = { removeString: false }) {
+  let inString = false;
+  let stringFence = "";
+  let result = "";
+  for (let i = 0; i < query.length; i++) {
+    const char = query[i];
+    const prevChar = query[i - 1];
+    const nextChar = query[i + 1];
+    if (char === "'" || char === '"') {
+      if (!options?.removeString) {
+        result += char;
+        continue;
+      }
+      if (inString) {
+        if (char !== stringFence || nextChar === stringFence || prevChar === stringFence) {
+          continue;
+        }
+        inString = false;
+        stringFence = "";
+        continue;
+      } else {
+        inString = true;
+        stringFence = char;
+        continue;
+      }
+    }
+    if (!inString) {
+      if (char === "-" && nextChar === "-") {
+        return result;
+      }
+      if (char === "/" && nextChar === "*") {
+        i += 2;
+        while (i < query.length && !(query[i] === "*" && query[i + 1] === "/")) {
+          i += 1;
+        }
+        i += 2;
+        continue;
+      }
+      result += char;
+    }
+  }
+  return result;
+}
+
+function defineRenderHandler(render) {
+  const runtimeConfig = useRuntimeConfig();
+  return eventHandler(async (event) => {
+    const nitroApp = useNitroApp();
+    const ctx = { event, render, response: void 0 };
+    await nitroApp.hooks.callHook("render:before", ctx);
+    if (!ctx.response) {
+      if (event.path === `${runtimeConfig.app.baseURL}favicon.ico`) {
+        setResponseHeader(event, "Content-Type", "image/x-icon");
+        return send(
+          event,
+          "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+        );
+      }
+      ctx.response = await ctx.render(event);
+      if (!ctx.response) {
+        const _currentStatus = getResponseStatus(event);
+        setResponseStatus(event, _currentStatus === 200 ? 500 : _currentStatus);
+        return send(
+          event,
+          "No response returned from render handler: " + event.path
+        );
+      }
+    }
+    await nitroApp.hooks.callHook("render:response", ctx.response, ctx);
+    if (ctx.response.headers) {
+      setResponseHeaders(event, ctx.response.headers);
+    }
+    if (ctx.response.statusCode || ctx.response.statusMessage) {
+      setResponseStatus(
+        event,
+        ctx.response.statusCode,
+        ctx.response.statusMessage
+      );
+    }
+    return ctx.response.body;
+  });
+}
+
+const scheduledTasks = false;
+
+const tasks = {
+  
+};
+
+const __runningTasks__ = {};
+async function runTask(name, {
+  payload = {},
+  context = {}
+} = {}) {
+  if (__runningTasks__[name]) {
+    return __runningTasks__[name];
+  }
+  if (!(name in tasks)) {
+    throw createError({
+      message: `Task \`${name}\` is not available!`,
+      statusCode: 404
+    });
+  }
+  if (!tasks[name].resolve) {
+    throw createError({
+      message: `Task \`${name}\` is not implemented!`,
+      statusCode: 501
+    });
+  }
+  const handler = await tasks[name].resolve();
+  const taskEvent = { name, payload, context };
+  __runningTasks__[name] = handler.run(taskEvent);
+  try {
+    const res = await __runningTasks__[name];
+    return res;
+  } finally {
+    delete __runningTasks__[name];
+  }
+}
+
+const _gXQSyC = eventHandler(async (event) => {
+  const { sql } = await readBody(event);
+  const collection = getRouterParam(event, "collection");
+  assertSafeQuery(sql, collection);
+  const conf = useRuntimeConfig().content;
+  if (conf.integrityCheck) {
+    await checkAndImportDatabaseIntegrity(event, collection, conf);
+  }
+  return loadDatabaseAdapter(conf).all(sql);
+});
+
 const _lazy_Kmz4Ye = () => Promise.resolve().then(function () { return renderer$1; });
 
 const handlers = [
   { route: '/__nuxt_error', handler: _lazy_Kmz4Ye, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: _SxA8c9, lazy: false, middleware: false, method: undefined },
+  { route: '/__nuxt_content/:collection/sql_dump', handler: _N3emdl, lazy: false, middleware: false, method: undefined },
+  { route: '/__nuxt_content/:collection/query', handler: _gXQSyC, lazy: false, middleware: false, method: undefined },
   { route: '/**', handler: _lazy_Kmz4Ye, lazy: true, middleware: false, method: undefined }
 ];
 
@@ -1572,82 +2046,6 @@ function useNitroApp() {
   return nitroApp$1;
 }
 runNitroPlugins(nitroApp$1);
-
-function defineRenderHandler(render) {
-  const runtimeConfig = useRuntimeConfig();
-  return eventHandler(async (event) => {
-    const nitroApp = useNitroApp();
-    const ctx = { event, render, response: void 0 };
-    await nitroApp.hooks.callHook("render:before", ctx);
-    if (!ctx.response) {
-      if (event.path === `${runtimeConfig.app.baseURL}favicon.ico`) {
-        setResponseHeader(event, "Content-Type", "image/x-icon");
-        return send(
-          event,
-          "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-        );
-      }
-      ctx.response = await ctx.render(event);
-      if (!ctx.response) {
-        const _currentStatus = getResponseStatus(event);
-        setResponseStatus(event, _currentStatus === 200 ? 500 : _currentStatus);
-        return send(
-          event,
-          "No response returned from render handler: " + event.path
-        );
-      }
-    }
-    await nitroApp.hooks.callHook("render:response", ctx.response, ctx);
-    if (ctx.response.headers) {
-      setResponseHeaders(event, ctx.response.headers);
-    }
-    if (ctx.response.statusCode || ctx.response.statusMessage) {
-      setResponseStatus(
-        event,
-        ctx.response.statusCode,
-        ctx.response.statusMessage
-      );
-    }
-    return ctx.response.body;
-  });
-}
-
-const scheduledTasks = false;
-
-const tasks = {
-  
-};
-
-const __runningTasks__ = {};
-async function runTask(name, {
-  payload = {},
-  context = {}
-} = {}) {
-  if (__runningTasks__[name]) {
-    return __runningTasks__[name];
-  }
-  if (!(name in tasks)) {
-    throw createError({
-      message: `Task \`${name}\` is not available!`,
-      statusCode: 404
-    });
-  }
-  if (!tasks[name].resolve) {
-    throw createError({
-      message: `Task \`${name}\` is not implemented!`,
-      statusCode: 501
-    });
-  }
-  const handler = await tasks[name].resolve();
-  const taskEvent = { name, payload, context };
-  __runningTasks__[name] = handler.run(taskEvent);
-  try {
-    const res = await __runningTasks__[name];
-    return res;
-  } finally {
-    delete __runningTasks__[name];
-  }
-}
 
 if (!globalThis.crypto) {
   globalThis.crypto = nodeCrypto;

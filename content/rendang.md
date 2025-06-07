@@ -2,13 +2,11 @@
 title: Vegan Rendang with Mushrooms and Plant-Based Chicken
 description: A rich and aromatic Indonesian-inspired rendang featuring mushrooms, plant-based chicken, and a homemade spice paste.
 description_long: |
-  This vegan rendang is a soul-warming, flavor-packed dish that brings the deep, complex essence of Indonesian cuisine right to your kitchen. As someone who splits his time between debugging software and exploring cultures through their food, I find rendang to be a dish that truly embodies patience, balance, and storytelling — not unlike crafting the perfect piece of code.
+  This vegan rendang is a cozy, flavor-rich twist on an Indonesian classic — hearty, aromatic, and perfect for slow, mindful cooking. As someone who toggles between code and cuisine, I love how this dish blends precision with soul.
 
-  The heart of this dish lies in the boemboe — an aromatic spice paste made from shallots, garlic, ginger, galangal, toasted coconut, and a medley of warming spices. Slowly sautéed, it forms the foundation of flavor that makes rendang so uniquely rich and comforting. Traditionally a slow-cooked beef stew, this plant-based version uses earthy mushrooms and tender vegan chicken to soak up all those fragrant, caramelized notes.
+  At its core is a bold boemboe: a spice paste of shallots, garlic, ginger, galangal, toasted coconut, and warm spices. Mushrooms and plant-based chicken soak up the creamy, spiced coconut sauce, layered with notes of lime leaf and lemongrass.
 
-  I first started making this dish on a gray Utrecht evening, looking for something grounding and vibrant. What emerged was a deeply savory, creamy stew with just the right hit of heat and citrus brightness from kaffir lime and lemongrass. It’s hearty, layered, and somehow nostalgic — even if you didn’t grow up with it.
-
-  Whether you’re a seasoned lover of Indonesian food or discovering rendang for the first time, this recipe is a deeply satisfying culinary project. It rewards a bit of prep with a dish that fills your kitchen with intoxicating aromas and your plate with richness. Pair it with steamed jasmine rice and maybe a fresh cucumber salad, and you’ve got a meal that hits every note — byte by bite.
+  Born on a rainy Utrecht evening, this recipe has become a favorite when I’m craving something grounding yet vibrant. Serve it with rice and a crisp salad, and you’ve got a meal that’s deeply comforting — byte by bite.
 image: /images/rendang.jpg
 ingredients:
   boemboe:

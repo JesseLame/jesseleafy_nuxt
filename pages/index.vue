@@ -1,3 +1,10 @@
+<script setup>
+useSeoMeta({
+    title: 'Jesse\'s Leafy Feasts - Home',
+    description: 'A celebration of fresh flavors, nourishing greens, and plant-based magic. Dive into seasonal recipes, kitchen tales, and leafy goodness served with love.',
+})
+</script>
+
 <template>
     <div class="min-h-screen flex items-center justify-center p-6">
         <div class="w-full max-w-3xl bg-white/70 backdrop-blur-sm rounded-xl shadow-lg text-center p-10">

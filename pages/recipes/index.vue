@@ -6,6 +6,11 @@ watchEffect(() => {
     if (recipes.value) {
         console.log('Recipes:', recipes.value)
     }
+
+    useSeoMeta({
+        title: 'Jesse\'s Leafy Feasts - All Recipes',
+        description: 'Explore a collection of delicious plant-based recipes that celebrate fresh flavors and nourishing greens. Dive into seasonal delights and leafy goodness served with love.',
+    })
 })
 </script>
 

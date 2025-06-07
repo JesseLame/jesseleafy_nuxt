@@ -20,6 +20,13 @@ watchEffect(() => {
 
         recipeValue.meta.ingredientsSplit = ingredientsSplit;
     }
+
+    useSeoMeta({
+        title: recipeValue?.title || 'Recipe Not Found',
+        description: recipeValue?.description || 'Delicious plant-based recipe',
+        ingredients: recipeValue?.meta.ingredients || [],
+        instructions: recipeValue?.meta.instructions || []
+    });
 });
 
 </script>

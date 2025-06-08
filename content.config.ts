@@ -20,6 +20,7 @@ export default defineContentConfig({
 				]),
 				instructions: z.array(z.string()),
 				created: z.date(),
+				tags: z.array(z.string()).optional(),
 			}),
 		}),
 	},

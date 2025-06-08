@@ -13,12 +13,17 @@ const filteredRecipes = computed(() => {
         const q = searchQuery.value.toLowerCase()
         return (
             recipe.title?.toLowerCase().includes(q) ||
-            recipe.description?.toLowerCase().includes(q)
+            recipe.description?.toLowerCase().includes(q) ||
+            recipe.tags?.some((tag: string) =>
+                tag.toLowerCase().includes(q)
+            )
         )
     })
 })
 
 watchEffect(() => {
+    console.log('Filtered Recipes:', filteredRecipes.value)
+
     useSeoMeta({
         title: 'Jesse\'s Leafy Feasts - All Recipes',
         description: 'Explore a collection of delicious plant-based recipes that celebrate fresh flavors and nourishing greens. Dive into seasonal delights and leafy goodness served with love.',

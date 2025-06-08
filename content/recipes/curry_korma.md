@@ -7,7 +7,7 @@ description_long: |
   Inspired by South Indian flavors, the combination of methi seeds, curry leaves, and whole masala like cardamom and cinnamon gives this dish warmth and depth. Serve it with rice or naan for a nourishing, satisfying meal.
 
   Ideal for a weekend cook or when you want to impress friends with a homemade curry that’s bold yet balanced.
-image: /images/cashew_curry.jpg
+image: /images/curry_korma.jpg
 ingredients:
   curry_paste:
     - 4 tomatoes

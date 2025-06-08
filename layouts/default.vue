@@ -23,13 +23,13 @@ const route = useRoute();
                     <NuxtLink to="/" class="hover:underline" :class="{ 'underline font-bold': route.path === '/' }">
                         Home
                     </NuxtLink>
-                    <NuxtLink to="/about" class="hover:underline"
-                        :class="{ 'underline font-bold': route.path === '/about' }">
-                        About
-                    </NuxtLink>
                     <NuxtLink to="/recipes" class="hover:underline"
                         :class="{ 'underline font-bold': route.path === '/recipes' }">
                         Recipes
+                    </NuxtLink>
+                    <NuxtLink to="/about" class="hover:underline"
+                        :class="{ 'underline font-bold': route.path === '/about' }">
+                        About
                     </NuxtLink>
                     <NuxtLink to="/contact" class="hover:underline"
                         :class="{ 'underline font-bold': route.path === '/contact' }">

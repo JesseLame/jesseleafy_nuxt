@@ -1494,12 +1494,12 @@ async function decompressSQLDump(base64Str, compressionType = "gzip") {
 }
 
 const checksums = {
-  "content": "v3.5.0--0e10gfRcinTNBbJu1D7Ek-DVZNy-FlnhkhVWfUB113s",
-  "recipes": "v3.5.0--nHJtuMdQuIExx2xq1Kdlwm-XIi4z8Ubf4Eg3noT4TNI"
+  "content": "v3.5.0--PRbPIee2AL6xgNDR91j4867JaB00OBWwPgYkXrFHrK0",
+  "recipes": "v3.5.0--7uVj4m3VVSPRlpwh-X7FKyZri9UeD420fjL1Zl--3Rw"
 };
 const checksumsStructure = {
   "content": "bgIYhpjRuV8zbHJE_CfelwKpJ_Td6YuGJwixiek8lmI",
-  "recipes": "nHJtuMdQuIExx2xq1Kdlwm-XIi4z8Ubf4Eg3noT4TNI"
+  "recipes": "JoSus-rhLVR1GvI_G6xaoRBiImyy2PllgmWNLf93vqY"
 };
 const tables = {
   "content": "_content_content",
@@ -1534,7 +1534,12 @@ const contentManifest = {
       "description": "string",
       "seo": "json",
       "body": "json",
-      "navigation": "json"
+      "navigation": "json",
+      "description_long": "string",
+      "image": "string",
+      "ingredients": "json",
+      "instructions": "json",
+      "created": "date"
     }
   },
   "info": {

@@ -1,65 +1,65 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
+import MarkdownIt from 'markdown-it'
 
-const route = useRoute();
-const slug = route.params.slug;
+const md = new MarkdownIt()
 
-// Use queryCollection to get the content matching this slug
-const { data: recipe } = await useAsyncData(() => queryCollection('content').path(`/${slug}`).first())
+const route = useRoute()
+const slug = route.params.slug
+
+const { data: recipe } = await useAsyncData('recipe', () =>
+    queryCollection('recipes').path(`/recipes/${slug}`).first()
+)
+
+// Determine if ingredients are grouped
+const ingredientsSplit = computed(() =>
+    recipe.value && !Array.isArray(recipe.value.ingredients)
+)
+
+const descriptionLongHTML = computed(() => {
+    const raw = recipe.value?.description_long || ''
+    return md.render(raw.replace(/\\n/g, '\n')) // Replace literal \n with real line breaks
+})
 
 watchEffect(() => {
-    const recipeValue = recipe.value;
-    if (recipeValue) {
-        const { title, description, meta } = recipeValue;
-        let { ingredients, instructions } = meta;
-
-        let ingredientsSplit = false;
-        if (!Array.isArray(ingredients)) {
-            ingredientsSplit = true;
-        }
-
-        recipeValue.meta.ingredientsSplit = ingredientsSplit;
+    if (recipe.value) {
+        console.log('Recipe:', recipe.value)
     }
 
     useSeoMeta({
-        title: recipeValue?.title || 'Recipe Not Found',
-        description: recipeValue?.description || 'Delicious plant-based recipe',
-        ingredients: recipeValue?.meta.ingredients || [],
-        instructions: recipeValue?.meta.instructions || []
-    });
-});
-
+        title: recipe.value?.title || 'Recipe',
+        description: recipe.value?.description || 'A delicious recipe from Jesse\'s Leafy Feasts.',
+        image: recipe.value?.image || '/default-recipe-image.jpg',
+    })
+})
 </script>
 
 <template>
-    <div v-if="recipe" class="mx-auto mt-10 mb-16 w-full max-w-3xl bg-white shadow-xl rounded-xl p-8">
-        <!-- Recipe Image -->
-        <img v-if="recipe.meta.image" :src="recipe.meta.image" :alt="recipe.title"
-            class="w-full h-64 object-cover rounded-lg mb-6" />
-
-        <!-- Title & Description -->
-        <h1 class="text-4xl font-bold mb-4 text-gray-900">{{ recipe.title }}</h1>
-        <p class="text-lg text-gray-600 mb-8">{{ recipe.description }}</p>
+    <div v-if="recipe" class="mx-4 sm:mx-auto mt-10 mb-16 w-full max-w-3xl bg-white shadow-xl rounded-xl p-4 sm:p-8">
+        <img v-if="recipe.image" :src="recipe.image" :alt="recipe.title"
+            class="w-full h-48 sm:h-64 object-cover rounded-lg mb-6" />
+        <h1 class="text-2xl sm:text-4xl font-bold mb-4 text-gray-900">{{ recipe.title }}</h1>
+        <p class="text-base sm:text-lg text-gray-600 mb-8">{{ recipe.description }}</p>
 
         <!-- Long description -->
-        <div v-if="recipe.meta.description_long" class="text-gray-700 mb-6">
-            <p v-for="(paragraph, index) in recipe.meta.description_long.split('\n')" :key="index">
-                {{ paragraph }}
-            </p>
-        </div>
+        <!-- <div v-if="recipe.description_long" class="text-gray-700 mb-6 prose"
+            v-html="md.render(recipe.description_long)"></div> -->
+
+        <!-- Long description -->
+        <div v-if="descriptionLongHTML" class="text-gray-700 mb-6 prose" v-html="descriptionLongHTML"></div>
 
         <!-- Ingredients -->
         <section>
             <h2 class="text-2xl font-semibold text-green-700 mb-3">Ingredients</h2>
 
             <!-- Flat list version -->
-            <ul v-if="!recipe.meta.ingredientsSplit" class="list-disc list-inside space-y-1 text-gray-800">
-                <li v-for="item in recipe.meta.ingredients" :key="item">{{ item }}</li>
+            <ul v-if="!ingredientsSplit" class="list-disc list-inside space-y-1 text-gray-800">
+                <li v-for="item in recipe.ingredients" :key="item">{{ item }}</li>
             </ul>
 
             <!-- Sectioned list version -->
             <div v-else class="space-y-4">
-                <div v-for="(items, section) in recipe.meta.ingredients" :key="section">
+                <div v-for="(items, section) in recipe.ingredients" :key="section">
                     <h3 class="text-xl font-semibold text-green-600 mb-1 capitalize">
                         {{ section.replace(/_/g, ' ') }}
                     </h3>
@@ -75,7 +75,7 @@ watchEffect(() => {
         <section class="mt-8">
             <h2 class="text-2xl font-semibold text-green-700 mb-3">Instructions</h2>
             <ol class="list-decimal list-inside space-y-2 text-gray-800">
-                <li v-for="step in recipe.meta.instructions" :key="step">{{ step }}</li>
+                <li v-for="step in recipe.instructions" :key="step">{{ step }}</li>
             </ol>
         </section>
     </div>
@@ -84,6 +84,3 @@ watchEffect(() => {
         <p>Recipe not found.</p>
     </div>
 </template>
-
-
-

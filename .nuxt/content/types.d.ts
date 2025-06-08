@@ -2,7 +2,17 @@ import type { PageCollectionItemBase, DataCollectionItemBase } from '@nuxt/conte
 
 declare module '@nuxt/content' {
   interface ContentCollectionItem extends PageCollectionItemBase {}
-  interface RecipesCollectionItem extends PageCollectionItemBase {}
+  interface RecipesCollectionItem extends PageCollectionItemBase {
+    title: string;
+    description: string;
+    description_long?: string | undefined;
+    image?: string | undefined;
+    ingredients: string[] | {
+      [x: string]: string[];
+    };
+    instructions: string[];
+    created: Date;
+  }
 
   interface PageCollections {
     content: ContentCollectionItem

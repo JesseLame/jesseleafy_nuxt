@@ -18,6 +18,11 @@ instructions:
   - Season with salt and pepper to taste.
   - Toss the salad gently to combine ingredients.
   - Serve immediately with your favorite vinaigrette or dressing.
+created: 06-06-2025
+tags:
+  - salad 
+  - healthy
+  - vegetarian
 ---
 
 # Fresh Garden Salad

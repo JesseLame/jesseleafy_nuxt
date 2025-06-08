@@ -28,6 +28,11 @@ instructions:
   - Bake for 60–65 minutes, or until a toothpick inserted into the center comes out clean.
   - Let the bread cool in the pan for about 10 minutes, then transfer it to a wire rack to cool completely.
   - Slice and enjoy your homemade banana bread!
+created: 06-06-2025
+tags:
+  - banana bread
+  - baking
+  - comfort food
 ---
 
 # Banana Bread Recipe

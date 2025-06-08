@@ -40,6 +40,12 @@ instructions:
   - Bring to a boil, then lower the heat and let it simmer for about 20 minutes, until the mushrooms are tender.
   - If the mixture becomes too dry, add a splash of water to maintain a saucy consistency.
   - Season to taste with salt and pepper before serving.
+created: 06-06-2025
+tags:
+  - vegan
+  - rendang
+  - indonesian
+  - comfort food
 ---
 
 # Vegan Rendang with Mushrooms and Plant-Based Chicken

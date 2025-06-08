@@ -1,6 +1,7 @@
 <script setup lang="ts">
-const { data: recipes } = await useAsyncData('recipes', () => {
-    return queryCollection('content').all()
+
+const { data: recipes } = await useAsyncData('recipeData', () => {
+    return queryCollection('recipes').all()
 })
 watchEffect(() => {
     if (recipes.value) {
@@ -21,8 +22,8 @@ watchEffect(() => {
         <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             <li v-for="recipe in recipes" :key="recipe.path"
                 class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300">
-                <NuxtLink :to="`/recipes${recipe.path}`" class="block h-full">
-                    <img v-if="recipe.meta.image" :src="recipe.meta.image" alt="Recipe image"
+                <NuxtLink :to="`${recipe.path}`" class="block h-full">
+                    <img v-if="recipe.image" :src="recipe.image" alt="Recipe image"
                         class="w-full h-48 object-cover" />
                     <div class="p-5">
                         <h2 class="text-xl font-semibold mb-2">{{ recipe.title }}</h2>

@@ -1,4 +1,25 @@
 <script setup>
+const { data: recentRecipes } = await useAsyncData('recentRecipes', async () => {
+    const allRecipes = await queryCollection('recipes').all()
+
+    return allRecipes
+        .filter((r) => r.created)
+        .sort((a, b) => {
+            const parseDate = (dateStr) => {
+                const [day, month, year] = dateStr.split('-')
+                return new Date(`${year}-${month}-${day}`)
+            }
+            return parseDate(b.created) - parseDate(a.created)
+        })
+        .slice(0, 3)
+})
+
+watchEffect(() => {
+    if (recentRecipes.value) {
+        console.log('Recipes:', recentRecipes.value)
+    }
+})
+
 useSeoMeta({
     title: 'Jesse\'s Leafy Feasts - Home',
     description: 'A celebration of fresh flavors, nourishing greens, and plant-based magic. Dive into seasonal recipes, kitchen tales, and leafy goodness served with love.',
@@ -6,12 +27,13 @@ useSeoMeta({
 </script>
 
 <template>
-    <div class="min-h-screen flex items-center justify-center p-6">
-        <div class="w-full max-w-3xl bg-white/70 backdrop-blur-sm rounded-xl shadow-lg text-center p-10">
-            <h1 class="text-4xl md:text-6xl font-extrabold text-green-700 mb-4">
-                Welcome Jesse's Leafy Feasts 🍃
+    <div class="min-h-screen flex flex-col items-center px-4 sm:px-6 pt-10">
+        <!-- Welcome Section -->
+        <div class="w-full max-w-3xl bg-white/70 backdrop-blur-sm rounded-xl shadow-lg text-center p-6 sm:p-10 mb-10">
+            <h1 class="text-3xl sm:text-4xl md:text-6xl font-extrabold text-green-700 mb-4">
+                Welcome to Jesse's Leafy Feasts 🍃
             </h1>
-            <p class="text-lg md:text-xl text-gray-700 max-w-xl mx-auto mb-6">
+            <p class="text-base sm:text-lg md:text-xl text-gray-700 max-w-xl mx-auto mb-6">
                 A celebration of fresh flavors, nourishing greens, and plant-based magic. Dive into seasonal recipes,
                 kitchen tales, and leafy goodness served with love.
             </p>
@@ -22,5 +44,26 @@ useSeoMeta({
                 </NuxtLink>
             </div>
         </div>
+
+        <!-- Recent Recipes Section -->
+        <div class="w-full max-w-5xl">
+            <h2 class="text-2xl sm:text-3xl font-bold text-green-800 mb-6 text-center">Recent Recipes</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div v-for="recipe in recentRecipes" :key="recipe.path"
+                    class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+                    <NuxtLink :to="`${recipe.path}`" class="block h-full">
+                        <img v-if="recipe.image" :src="recipe.image" alt="Recipe image"
+                            class="w-full h-48 object-cover" />
+                        <div class="p-5">
+                            <h2 class="text-xl font-semibold mb-2">{{ recipe.title }}</h2>
+                            <p class="text-gray-600 text-sm">{{ recipe.description }}</p>
+                        </div>
+                    </NuxtLink>
+                </div>
+            </div>
+
+        </div>
     </div>
 </template>
+
+

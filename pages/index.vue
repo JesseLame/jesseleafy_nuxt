@@ -5,19 +5,9 @@ const { data: recentRecipes } = await useAsyncData('recentRecipes', async () => 
     return allRecipes
         .filter((r) => r.created)
         .sort((a, b) => {
-            const parseDate = (dateStr) => {
-                const [day, month, year] = dateStr.split('-')
-                return new Date(`${year}-${month}-${day}`)
-            }
-            return parseDate(b.created) - parseDate(a.created)
+            return new Date(b.created) - new Date(a.created)
         })
         .slice(0, 3)
-})
-
-watchEffect(() => {
-    if (recentRecipes.value) {
-        console.log('Recipes:', recentRecipes.value)
-    }
 })
 
 useSeoMeta({

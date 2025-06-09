@@ -21,6 +21,20 @@ const descriptionLongHTML = computed(() => {
     return md.render(raw.replace(/\\n/g, '\n')) // Replace literal \n with real line breaks
 })
 
+const parseIngredient = (item: string): string => {
+    const linkRegex = /\((\/[^\s)]+)\)/ // Matches (link) pattern
+    const match = item.match(linkRegex)
+
+    if (match) {
+        const text = item.replace(linkRegex, '').trim()
+        const href = match[1]
+        return `<a href="${href}" class="text-green-600 underline hover:text-green-800">${text}</a>`
+    } else {
+        return item
+    }
+}
+
+
 watchEffect(() => {
     if (recipe.value) {
         console.log('Recipe:', recipe.value)
@@ -37,13 +51,9 @@ watchEffect(() => {
 <template>
     <div v-if="recipe" class="mx-4 sm:mx-auto mt-10 mb-16 w-full max-w-3xl bg-white shadow-xl rounded-xl p-4 sm:p-8">
         <img v-if="recipe.image" :src="recipe.image" :alt="recipe.title"
-            class="w-full h-48 sm:h-64 object-cover rounded-lg mb-6" />
+            class="w-full aspect-square object-cover rounded-lg mb-6" />
         <h1 class="text-2xl sm:text-4xl font-bold mb-4 text-gray-900">{{ recipe.title }}</h1>
         <p class="text-base sm:text-lg text-gray-600 mb-8">{{ recipe.description }}</p>
-
-        <!-- Long description -->
-        <!-- <div v-if="recipe.description_long" class="text-gray-700 mb-6 prose"
-            v-html="md.render(recipe.description_long)"></div> -->
 
         <!-- Long description -->
         <div v-if="descriptionLongHTML" class="text-gray-700 mb-6 prose" v-html="descriptionLongHTML"></div>
@@ -54,7 +64,7 @@ watchEffect(() => {
 
             <!-- Flat list version -->
             <ul v-if="!ingredientsSplit" class="list-disc list-inside space-y-1 text-gray-800">
-                <li v-for="item in recipe.ingredients" :key="item">{{ item }}</li>
+                <li v-for="item in recipe.ingredients" :key="item" v-html="parseIngredient(item)"></li>
             </ul>
 
             <!-- Sectioned list version -->
@@ -64,7 +74,7 @@ watchEffect(() => {
                         {{ section.replace(/_/g, ' ') }}
                     </h3>
                     <ul class="list-disc list-inside space-y-1 text-gray-800">
-                        <li v-for="item in items" :key="item">{{ item }}</li>
+                        <li v-for="item in items" :key="item" v-html="parseIngredient(item)"></li>
                     </ul>
                 </div>
             </div>

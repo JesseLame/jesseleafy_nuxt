@@ -17,6 +17,7 @@ ingredients:
   - 1 large egg, beaten
   - 1 teaspoon vanilla extract
   - 1 cup all-purpose flour
+  - Lime mayonnaise (/recipes/rendang)
 instructions:
   - Preheat your oven to 350°F (175°C).
   - In a mixing bowl, mash the ripe bananas with a fork until smooth.

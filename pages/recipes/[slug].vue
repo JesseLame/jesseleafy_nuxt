@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import MarkdownIt from 'markdown-it'
+import { toRaw } from 'vue'
 
 const md = new MarkdownIt()
 
@@ -34,6 +35,26 @@ const parseIngredient = (item: string): string => {
     }
 }
 
+const setIngredientsAsGroceries = () => {
+    let rawIngredients = toRaw(recipe.value.ingredients)
+
+    // Check if the ingredients are grouped
+    if (ingredientsSplit.value) {
+        // Flatten the grouped ingredients
+        const flattened = Object.values(rawIngredients).flat()
+        console.log('Flattened ingredients:', flattened)
+        rawIngredients = flattened
+    }
+
+    const groceries = rawIngredients.map(item => ({
+        name: item,
+        checked: false
+    }))
+    localStorage.setItem('groceries', JSON.stringify(groceries))
+    window.location.href = '/list'
+}
+
+
 
 watchEffect(() => {
     if (recipe.value) {
@@ -57,6 +78,11 @@ watchEffect(() => {
 
         <!-- Long description -->
         <div v-if="descriptionLongHTML" class="text-gray-700 mb-6 prose" v-html="descriptionLongHTML"></div>
+
+        <button @click="setIngredientsAsGroceries"
+            class="mt-6 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+            Set as groceries list
+        </button>
 
         <!-- Ingredients -->
         <section>
@@ -88,6 +114,8 @@ watchEffect(() => {
                 <li v-for="step in recipe.instructions" :key="step">{{ step }}</li>
             </ol>
         </section>
+
+
     </div>
 
     <div v-else class="text-center text-gray-500 py-20">

@@ -27,6 +27,10 @@ const route = useRoute();
                         :class="{ 'underline font-bold': route.path === '/recipes' }">
                         Recipes
                     </NuxtLink>
+                    <NuxtLink to="/list" class="hover:underline"
+                        :class="{ 'underline font-bold': route.path === '/list' }">
+                        Grocery List
+                    </NuxtLink>
                     <NuxtLink to="/about" class="hover:underline"
                         :class="{ 'underline font-bold': route.path === '/about' }">
                         About

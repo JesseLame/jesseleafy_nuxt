@@ -51,11 +51,11 @@ watch(groceries, saveGroceries, { deep: true })
 
 <template>
     <div class="min-h-screen flex items-start justify-center p-6 pt-24">
-        <div class="w-full max-w-3xl bg-white/70 backdrop-blur-sm rounded-xl shadow-lg text-center p-10">
+        <div class="w-full sm:max-w-3xl bg-white/70 backdrop-blur-sm rounded-xl shadow-lg text-center p-10">
 
             <!-- Add item input -->
             <div class="flex items-center mb-6">
-                <input v-model="newItem" type="text" placeholder="Add a new item"
+                <input v-model="newItem" @keydown.enter.prevent="addItem" type="text" placeholder="Add a new item"
                     class="flex-1 p-2 border rounded-l-lg border-gray-300 focus:outline-none" />
                 <button @click="addItem" class="px-4 py-2 bg-green-600 text-white rounded-r-lg hover:bg-green-700">
                     Add

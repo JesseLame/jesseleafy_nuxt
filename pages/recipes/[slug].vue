@@ -81,7 +81,7 @@ watchEffect(() => {
 
         <button @click="setIngredientsAsGroceries"
             class="mt-6 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
-            Set as groceries list
+            Add to groceries list
         </button>
 
         <!-- Ingredients -->

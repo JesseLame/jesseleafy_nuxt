@@ -6,7 +6,7 @@ description_long: |
 
   Whether you're dolloping it onto a burger or using it as a base for dressings and dips, this lime mayo delivers a perfect balance of richness and acidity — all whipped up in minutes.
 
-image: /images/lime_mayo.jpg
+image: /images/lime_mayo.png
 ingredients:
   - 2 egg yolks
   - 1 tbsp vinegar

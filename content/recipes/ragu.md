@@ -7,7 +7,7 @@ description_long: |
   Inspired by traditional bolognese but crafted with entirely vegan ingredients, this dish is ideal for pasta, lasagna, or spooned over creamy polenta. A perfect weekend project that rewards with layers of umami, spice, and warmth.
 
   Whether you’re a devoted vegan or simply veggie-curious, this ragu satisfies with robust flavor and tender texture — no compromise needed.
-image: /images/vegan-ragu.jpg
+image: /images/ragu_vegan.png
 ingredients:
   base:
     - 2 carrots (winterpeen), finely diced

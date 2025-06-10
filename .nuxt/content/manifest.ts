@@ -1,10 +1,10 @@
 export const checksums = {
-  "content": "v3.5.0--iHAPa6ke1WLs1EHNsmXuGAzBIFRW8C8YXH9Xh2zBw8c",
-  "recipes": "v3.5.0--sFDDo6s8z1ef8xzDvGwMelWLREVDVKS1hgM8E03wlkI"
+  "content": "v3.5.0--1WhfMQ5fdKWtamH2MPWHpdNc9PnIugHl_RkNnrL_fVE",
+  "recipes": "v3.5.0--NWg_uU1iEGAWXM4SnVu5-uJunlQx9QX2B-AYfFiFj0I"
 }
 export const checksumsStructure = {
   "content": "bgIYhpjRuV8zbHJE_CfelwKpJ_Td6YuGJwixiek8lmI",
-  "recipes": "cWI7Gqk1D7qHZ4nwij41u4Q-pd70C6a_n3cGYiu3ANQ"
+  "recipes": "hoqlMcdQA8SCCUuPb4KQ3g6isyoul0chUoL1i6UhV3I"
 }
 
 export const tables = {
@@ -47,7 +47,8 @@ export default {
       "ingredients": "json",
       "instructions": "json",
       "created": "date",
-      "tags": "json"
+      "tags": "json",
+      "categories": "json"
     }
   },
   "info": {

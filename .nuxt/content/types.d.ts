@@ -13,6 +13,7 @@ declare module '@nuxt/content' {
     instructions: string[];
     created: Date;
     tags?: string[] | undefined;
+    categories?: string[] | undefined;
   }
 
   interface PageCollections {

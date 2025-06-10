@@ -24,6 +24,10 @@ tags:
   - easy meals
   - comfort food
   - lazy dinner
+categories:
+  - dinner
+  - comfort food
+  - quick meals
 ---
 
 # Frozen Pizza

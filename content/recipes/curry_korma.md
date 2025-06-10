@@ -46,6 +46,10 @@ tags:
   - curry
   - south indian
   - comfort food
+categories:
+  - dinner
+  - comfort food
+  - batch cooking
 ---
 
 # Cashew Curry with Eggplant and Mushrooms

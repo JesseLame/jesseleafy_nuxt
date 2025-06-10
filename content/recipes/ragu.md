@@ -54,6 +54,10 @@ tags:
   - comfort food
   - pasta
   - batch cooking
+categories:
+  - dinner
+  - comfort food
+  - batch cooking
 ---
 
 # Hearty Vegan Ragu with Mushrooms, Walnuts, and Mince

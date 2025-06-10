@@ -40,6 +40,10 @@ tags:
   - sandwich
   - vegetarian
   - street food
+categories:
+  - lunch
+  - dinner
+  - comfort food
 ---
 
 # Bánh Mì with Marinated Mushrooms

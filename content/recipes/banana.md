@@ -36,6 +36,11 @@ tags:
   - banana bread
   - almond flour
   - comfort food
+categories:
+  - baking
+  - comfort food
+  - breakfast
+  - snacks
 ---
 
 # Banana Bread Recipe

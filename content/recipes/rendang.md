@@ -46,6 +46,10 @@ tags:
   - rendang
   - indonesian
   - comfort food
+categories:
+  - dinner
+  - comfort food
+  - batch cooking
 ---
 
 # Vegan Rendang with Mushrooms and Plant-Based Chicken

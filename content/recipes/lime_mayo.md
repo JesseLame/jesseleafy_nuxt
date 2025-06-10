@@ -26,6 +26,11 @@ tags:
   - lime
   - mayonnaise
   - sauce
+categories:
+  - sauces
+  - quick meals
+  - vegetarian
+time: 10
 ---
 
 # Lime Mayonnaise

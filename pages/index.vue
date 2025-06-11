@@ -14,6 +14,7 @@ useSeoMeta({
     title: 'Jesse\'s Leafy Feasts - Home',
     description: 'A celebration of fresh flavors, nourishing greens, and plant-based magic. Dive into seasonal recipes, kitchen tales, and leafy goodness served with love.',
 })
+
 </script>
 
 <template>

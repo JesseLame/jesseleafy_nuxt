@@ -50,14 +50,16 @@ watch(groceries, saveGroceries, { deep: true })
 
 
 <template>
-    <div class="min-h-screen flex items-start justify-center p-6 pt-24">
-        <div class="w-full sm:max-w-3xl bg-white/70 backdrop-blur-sm rounded-xl shadow-lg text-center p-10">
+    <div class="min-h-screen flex flex-col items-center p-4 sm:p-6 pt-24">
+        <div
+            class="w-full max-w-full sm:max-w-3xl bg-white/70 backdrop-blur-sm rounded-xl shadow-lg text-center p-4 sm:p-10">
 
             <!-- Add item input -->
-            <div class="flex items-center mb-6">
+            <div class="flex flex-col sm:flex-row items-stretch mb-6 gap-2">
                 <input v-model="newItem" @keydown.enter.prevent="addItem" type="text" placeholder="Add a new item"
-                    class="flex-1 p-2 border rounded-l-lg border-gray-300 focus:outline-none" />
-                <button @click="addItem" class="px-4 py-2 bg-green-600 text-white rounded-r-lg hover:bg-green-700">
+                    class="w-full p-2 border rounded-lg border-gray-300 focus:outline-none" />
+                <button @click="addItem"
+                    class="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                     Add
                 </button>
             </div>
@@ -78,9 +80,9 @@ watch(groceries, saveGroceries, { deep: true })
                     </button>
                 </li>
             </ul>
-
         </div>
     </div>
 </template>
+
 
 

@@ -7,7 +7,7 @@ const { data: recentRecipes } = await useAsyncData('recentRecipes', async () => 
         .sort((a, b) => {
             return new Date(b.created) - new Date(a.created)
         })
-        .slice(0, 3)
+        .slice(0, 6)
 })
 
 useSeoMeta({

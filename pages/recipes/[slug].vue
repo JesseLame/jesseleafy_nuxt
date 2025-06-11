@@ -4,9 +4,16 @@ import MarkdownIt from 'markdown-it'
 import { toRaw } from 'vue'
 
 const md = new MarkdownIt()
-
 const route = useRoute()
 const slug = route.params.slug as string
+const { comments, loading, error, fetchComments, addComment } = useComments(slug);
+
+const newText = ref('');
+const newAuthor = ref('');
+const replyTexts = ref<Record<number, string>>({});
+const replyAuthors = ref<Record<number, string>>({});
+const showReplyForm = ref<Record<number, boolean>>({});
+
 
 const { data: recipe } = await useAsyncData('recipe', () =>
     queryCollection('recipes').path(`/recipes/${slug}`).first()
@@ -70,14 +77,30 @@ const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleString(undefined, options)
 }
 
-const { comments, loading, error, fetchComments, addComment } = useComments(slug)
-const newText = ref('');
-const newAuthor = ref('');
-
 async function submitComment() {
     await addComment(newText.value, newAuthor.value);
     newText.value = '';
+    newAuthor.value = '';
 }
+
+// Submit reply tied to a parent comment ID
+async function submitReply(parentId: number) {
+    const text = replyTexts.value[parentId];
+    const author = replyAuthors.value[parentId];
+
+    console.log('Submitting reply:', { text, author, parentId });
+
+    if (!text || !author) return;
+
+    await addComment(text, author, parentId);
+    replyTexts.value[parentId] = '';
+    replyAuthors.value[parentId] = '';
+}
+
+function toggleReplyForm(commentId: number) {
+    showReplyForm.value[commentId] = !showReplyForm.value[commentId];
+}
+
 
 onMounted(async () => {
     await fetchComments()
@@ -168,8 +191,35 @@ watchEffect(() => {
                         <span>{{ formatDate(comment.created_at) }}</span>
                     </div>
                     <p class="text-gray-800">{{ comment.text }}</p>
+
+                    <!-- Existing Replies -->
+                    <div v-if="comment.replies && comment.replies.length" class="ml-4 mt-2 space-y-2">
+                        <div v-for="reply in comment.replies" :key="reply.id"
+                            class="text-sm text-gray-700 bg-white p-2 rounded border">
+                            <strong>{{ reply.author_name }}:</strong> {{ reply.text }}
+                        </div>
+                    </div>
+
+                    <!-- Reply Button -->
+                    <button @click="toggleReplyForm(comment.id)" class="mt-2 text-green-600 text-sm hover:underline">
+                        Reply
+                    </button>
+
+                    <!-- Reply Form -->
+                    <div v-if="showReplyForm[comment.id]" class="ml-4 mt-3">
+                        <input v-model="replyAuthors[comment.id]" type="text" placeholder="Your name"
+                            class="w-full p-2 mb-1 border rounded text-sm" />
+                        <textarea v-model="replyTexts[comment.id]" placeholder="Write a reply..."
+                            class="w-full p-2 border rounded text-sm" rows="2"></textarea>
+                        <button @click="submitReply(comment.id)"
+                            class="mt-2 px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">
+                            Submit Reply
+                        </button>
+                    </div>
+
                 </div>
             </div>
+
             <div v-else class="text-gray-500">No comments yet.</div>
         </section>
 

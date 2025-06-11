@@ -15,26 +15,6 @@ useSeoMeta({
     description: 'A celebration of fresh flavors, nourishing greens, and plant-based magic. Dive into seasonal recipes, kitchen tales, and leafy goodness served with love.',
 })
 
-// import { createClient } from '@supabase/supabase-js'
-// const config = useRuntimeConfig()
-
-// const supabase = createClient(config.public.supabaseUrl, config.public.supabaseAnonKey)
-
-// console.log('Supabase Client:', supabase)
-// const comments = ref([])
-// async function getComments() {
-//     const { data } = await supabase.from('comments').select().eq('post_id', 'banana').order('created_at', { ascending: false })
-//     console.log('Fetched Comments:', data)
-//     comments.value = data
-// }
-
-// onMounted(async () => {
-//     getComments()
-
-//     // Log comments to console
-//     console.log('Comments:', comments.value)
-// })
-
 </script>
 
 <template>

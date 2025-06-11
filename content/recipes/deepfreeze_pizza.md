@@ -12,9 +12,9 @@ ingredients:
   main:
     - 1 frozen pizza (your choice of brand and toppings)
 instructions:
-  - Preheat your oven according to the instructions on the pizza box (typically 200–220°C / 400–430°F).
+  - Preheat your oven according to the instructions on the pizza box (typically 200–220°C).
   - Remove all packaging from the frozen pizza.
-  - Optional: Add extra toppings like chili flakes, garlic powder, or fresh basil for a personal touch.
+  - Add extra toppings like chili flakes, garlic powder, or fresh basil for a personal touch.
   - Place the pizza directly on the oven rack or a preheated baking tray for a crispier base.
   - Bake for 10–15 minutes, or as directed, until the cheese is bubbly and the crust is golden brown.
   - Remove carefully and let it cool for a minute or two before slicing.

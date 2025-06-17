@@ -24,7 +24,7 @@ ingredients:
     - Pickled daikon and carrot
     - Lime mayonnaise (/recipes/lime_mayo)
     - Crusty baguette or Vietnamese-style roll
-    - Vegetarian pate
+    - Mushroom Pâté or store bought(/recipes/mushroom_pate) 
     - Maggi seasoning
 instructions:
   - In a bowl, mix the garlic, soy sauce, five spice powder, syrup, oyster sauce, Maggi seasoning, and minced lemongrass.

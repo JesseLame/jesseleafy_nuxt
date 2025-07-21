@@ -659,7 +659,7 @@ const _inlineRuntimeConfig = {
     "supabaseUrl": "https://uquwfijfetpcekpgmzeh.supabase.co",
     "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxdXdmaWpmZXRwY2VrcGdtemVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1ODE5MzgsImV4cCI6MjA2NTE1NzkzOH0.OCNWKbWmjoUaaN62a3NbXAYDXZYZJLYydHTHj7U7iNc",
     "content": {
-      "wsUrl": "ws://localhost:4000/"
+      "wsUrl": "ws://localhost:4001/"
     },
     "mdc": {
       "components": {
@@ -1496,8 +1496,8 @@ async function decompressSQLDump(base64Str, compressionType = "gzip") {
 }
 
 const checksums = {
-  "content": "v3.5.0--Der7GYskLdmlq264x6D02Ogn5yhS5z3o865YN5hzL4k",
-  "recipes": "v3.5.0--NYyzNWVvabgHb0jI7Gle2pNTYOdzrn11SVAl6ihrCiA"
+  "content": "v3.5.0--jp6Fims1XVn9we3oUIxi2uMistR70ZkBhbM7QtwqAWQ",
+  "recipes": "v3.5.0--f9r0mboIRbUA2XJLARAKS-noiO6jlns4HQUXCG5g1kM"
 };
 const checksumsStructure = {
   "content": "bgIYhpjRuV8zbHJE_CfelwKpJ_Td6YuGJwixiek8lmI",

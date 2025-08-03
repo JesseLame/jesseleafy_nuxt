@@ -637,10 +637,10 @@ const _inlineRuntimeConfig = {
       "/__nuxt_content/**": {
         "robots": false
       },
-      "/__nuxt_content/content/sql_dump": {
+      "/__nuxt_content/content/sql_dump.txt": {
         "prerender": true
       },
-      "/__nuxt_content/recipes/sql_dump": {
+      "/__nuxt_content/recipes/sql_dump.txt": {
         "prerender": true
       },
       "/_nuxt/builds/meta/**": {
@@ -659,7 +659,7 @@ const _inlineRuntimeConfig = {
     "supabaseUrl": "https://uquwfijfetpcekpgmzeh.supabase.co",
     "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxdXdmaWpmZXRwY2VrcGdtemVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1ODE5MzgsImV4cCI6MjA2NTE1NzkzOH0.OCNWKbWmjoUaaN62a3NbXAYDXZYZJLYydHTHj7U7iNc",
     "content": {
-      "wsUrl": "ws://localhost:4001/"
+      "wsUrl": "ws://localhost:4000/"
     },
     "mdc": {
       "components": {
@@ -680,7 +680,7 @@ const _inlineRuntimeConfig = {
   },
   "content": {
     "databaseVersion": "v3.5.0",
-    "version": "3.5.1",
+    "version": "3.6.3",
     "database": {
       "type": "sqlite",
       "filename": "./contents.sqlite"
@@ -1491,17 +1491,17 @@ async function decompressSQLDump(base64Str, compressionType = "gzip") {
   const binaryData = Uint8Array.from(atob(base64Str), (c) => c.charCodeAt(0));
   const response = new Response(new Blob([binaryData]));
   const decompressedStream = response.body?.pipeThrough(new DecompressionStream(compressionType));
-  const decompressedText = await new Response(decompressedStream).text();
-  return decompressedText.split("\n");
+  const text = await new Response(decompressedStream).text();
+  return JSON.parse(text);
 }
 
 const checksums = {
-  "content": "v3.5.0--jp6Fims1XVn9we3oUIxi2uMistR70ZkBhbM7QtwqAWQ",
-  "recipes": "v3.5.0--f9r0mboIRbUA2XJLARAKS-noiO6jlns4HQUXCG5g1kM"
+  "content": "v3.5.0---tgOzSrgbdP1bEILTa-BkO5mLGsBdrKJQf6kCcnswiA",
+  "recipes": "v3.5.0--tEA9gz0chkn9aChKB2NlC0PfTSvlr6Dvh69idi1xnp8"
 };
 const checksumsStructure = {
   "content": "bgIYhpjRuV8zbHJE_CfelwKpJ_Td6YuGJwixiek8lmI",
-  "recipes": "hoqlMcdQA8SCCUuPb4KQ3g6isyoul0chUoL1i6UhV3I"
+  "recipes": "Qv0s9wWYFukvvCE_US67yjXIn4G0KtcSCER-7ssC3Ck"
 };
 const tables = {
   "content": "_content_content",
@@ -1513,37 +1513,37 @@ const contentManifest = {
     "type": "page",
     "fields": {
       "id": "string",
-      "stem": "string",
+      "title": "string",
+      "body": "json",
+      "description": "string",
       "extension": "string",
       "meta": "json",
+      "navigation": "json",
       "path": "string",
-      "title": "string",
-      "description": "string",
       "seo": "json",
-      "body": "json",
-      "navigation": "json"
+      "stem": "string"
     }
   },
   "recipes": {
     "type": "page",
     "fields": {
       "id": "string",
-      "stem": "string",
-      "extension": "string",
-      "meta": "json",
-      "path": "string",
       "title": "string",
-      "description": "string",
-      "seo": "json",
       "body": "json",
-      "navigation": "json",
+      "categories": "json",
+      "created": "string",
+      "description": "string",
       "description_long": "string",
+      "extension": "string",
       "image": "string",
       "ingredients": "json",
       "instructions": "json",
-      "created": "date",
-      "tags": "json",
-      "categories": "json"
+      "meta": "json",
+      "navigation": "json",
+      "path": "string",
+      "seo": "json",
+      "stem": "string",
+      "tags": "json"
     }
   },
   "info": {
@@ -1553,10 +1553,13 @@ const contentManifest = {
 };
 
 async function fetchDatabase(event, collection) {
-  return await $fetch(`/__nuxt_content/${collection}/sql_dump`, {
+  return await $fetch(`/__nuxt_content/${collection}/sql_dump.txt`, {
     context: event ? { cloudflare: event.context.cloudflare } : {},
     responseType: "text",
-    headers: { "content-type": "text/plain" },
+    headers: {
+      "content-type": "text/plain",
+      ...event?.node?.req?.headers?.cookie ? { cookie: event.node.req.headers.cookie } : {}
+    },
     query: { v: checksums[String(collection)], t: Date.now()  }
   });
 }
@@ -1913,7 +1916,7 @@ const _lazy_Kmz4Ye = () => Promise.resolve().then(function () { return renderer$
 const handlers = [
   { route: '/__nuxt_error', handler: _lazy_Kmz4Ye, lazy: true, middleware: false, method: undefined },
   { route: '/__nuxt_island/**', handler: _SxA8c9, lazy: false, middleware: false, method: undefined },
-  { route: '/__nuxt_content/:collection/sql_dump', handler: _N3emdl, lazy: false, middleware: false, method: undefined },
+  { route: '/__nuxt_content/:collection/sql_dump.txt', handler: _N3emdl, lazy: false, middleware: false, method: undefined },
   { route: '/__nuxt_content/:collection/query', handler: _gXQSyC, lazy: false, middleware: false, method: undefined },
   { route: '/**', handler: _lazy_Kmz4Ye, lazy: true, middleware: false, method: undefined }
 ];

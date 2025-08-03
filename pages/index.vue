@@ -1,14 +1,6 @@
 <script setup>
-const { data: recentRecipes } = await useAsyncData('recentRecipes', async () => {
-    const allRecipes = await queryCollection('recipes').all()
+const { data: recentRecipes } = await useAsyncData('recentRecipes', async () => {});
 
-    return allRecipes
-        .filter((r) => r.created)
-        .sort((a, b) => {
-            return new Date(b.created) - new Date(a.created)
-        })
-        .slice(0, 6)
-})
 
 useSeoMeta({
     title: 'Jesse\'s Leafy Feasts - Home',

@@ -38,6 +38,7 @@ instructions:
   - Drizzle with crispy chili oil for an extra kick.
   - Optional: Garnish with fresh herbs like cilantro or basil for added freshness.
 created: 20-07-2025
+category: Main Dishes
 tags:
   - soup
   - wonton

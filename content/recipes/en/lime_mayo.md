@@ -21,15 +21,12 @@ instructions:
   - As the mixture thickens, you can increase the oil flow to a thin, steady stream, whisking constantly until all the oil is incorporated and the mayo is thick and glossy.
   - Season with salt and freshly ground black pepper to taste.
 created: 09-06-2025
+category: Condiments
 tags:
   - condiment
   - lime
   - mayonnaise
   - sauce
-categories:
-  - sauces
-  - quick meals
-  - vegetarian
 time: 10
 ---
 

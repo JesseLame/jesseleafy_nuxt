@@ -36,6 +36,7 @@ instructions:
   - Drop in the pelmeni and cook until they float, about 5 minutes. Do not overcook.
   - Serve drained or in broth. Garnish with sour cream (vegan if desired), melted butter, vinegar, fresh herbs, or sautéed onions.
 created: 2025-09-01
+category: Dumplings
 tags:
   - vegan
   - russian

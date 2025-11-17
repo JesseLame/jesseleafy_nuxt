@@ -23,6 +23,7 @@ instructions:
   - Return the pak choi to the pan and stir-fry for 1 minute.
   - Add the vegan oyster sauce and soy sauce. Stir-fry everything together for another minute until the pak choi is well-coated and heated through.
 created: 20-07-2025
+category: Sides
 tags:
   - vegan
   - stir-fry

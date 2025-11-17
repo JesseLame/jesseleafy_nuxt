@@ -41,15 +41,12 @@ instructions:
   - Add water to the mixture and simmer on low heat for about 30 minutes, until the vegetables are tender and the sauce is rich.
   - Adjust seasoning and serve with warm rice or flatbread.
 created: 08-06-2025
+category: Main Dishes
 tags:
   - vegetarian
   - curry
   - south indian
   - comfort food
-categories:
-  - dinner
-  - comfort food
-  - batch cooking
 ---
 
 # Cashew Curry with Eggplant and Mushrooms

@@ -33,6 +33,7 @@ instructions:
   - When the rice is creamy and tender, remove from heat and stir in the parmesan. Let it sit a moment to melt.
   - Serve topped with the reserved roasted pumpkin pieces and a sprinkle of extra cheese if desired.
 created: 08-10-2025  
+category: Main Dishes
 tags:
   - risotto
   - pumpkin

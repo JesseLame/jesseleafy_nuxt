@@ -28,6 +28,7 @@ instructions:
   - Stir in the minced garlic and half the herbs. Cook for an additional 2–3 minutes.
   - Taste and adjust seasoning. Serve warm or chilled, topped with the remaining herbs.
 created: 23-10-2025
+category: Main Dishes
 tags:
   - georgian
   - vegan

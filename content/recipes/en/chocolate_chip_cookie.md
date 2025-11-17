@@ -29,6 +29,7 @@ instructions:
   - Bake for 12–14 minutes or until golden brown. The cookies will still be soft.
   - Let cool on the baking sheet for a few minutes, then transfer to a wire rack to cool completely.
 created: 23-10-2025
+category: Baked Goods
 tags:
   - dessert
   - cookies

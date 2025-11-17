@@ -34,6 +34,7 @@ instructions:
 notes:
   - Traditionally, fermented soybeans are used in hoisin sauce. Since they're hard to find, miso paste is a great alternative.
 created: 07-14-2025
+category: Main Dishes
 tags:
   - vegan
   - bao

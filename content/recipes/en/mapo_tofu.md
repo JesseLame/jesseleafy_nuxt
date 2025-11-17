@@ -35,6 +35,7 @@ instructions:
   - Stir the cornstarch mixture again and slowly swirl it into the skillet. Gently stir until the sauce thickens.
   - Turn off heat and transfer to a serving bowl. Serve hot with steamed rice.
 created: 14-08-2025
+category: Main Dishes
 tags:
   - vegan
   - tofu

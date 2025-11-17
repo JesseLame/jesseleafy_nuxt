@@ -28,6 +28,7 @@ instructions:
   - Spread about 1.5 tablespoons of walnut paste on one end of each slice and roll up tightly.
   - Arrange on a plate and top with chopped fresh parsley.
 created: 15-11-2025
+category: Sides
 tags:
   - georgian
   - eggplant

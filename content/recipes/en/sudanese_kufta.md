@@ -37,6 +37,7 @@ instructions:
   - Dip each kufta in egg mixture, then re-coat with breadcrumbs.
   - Place in an air fryer at 180°C. Cook for 6 minutes per side, until golden brown.
 created: 2025-06-19
+category: Main Dishes
 tags:
   - sudanese
   - vegetarian

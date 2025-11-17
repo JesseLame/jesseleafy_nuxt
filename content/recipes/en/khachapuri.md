@@ -30,6 +30,7 @@ instructions:
   - Bake for 10–15 minutes, until golden brown.
   - Serve hot and enjoy!
 created: 23-10-2025
+category: Main Dishes
 tags:
   - georgian
   - cheese

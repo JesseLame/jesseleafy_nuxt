@@ -46,6 +46,7 @@ instructions:
   - Turn off the heat, stir in the cream (reserve 1 tbsp for garnish).
   - Garnish with cream and chopped coriander. Serve with rice or Indian bread.
 created: 08-10-2025
+category: Main Dishes
 tags:
   - indian
   - paneer

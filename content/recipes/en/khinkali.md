@@ -32,7 +32,8 @@ instructions:
   - Flour your work surface and roll each ball into a thin circle.
   - Place a spoonful of filling in the center and pleat the edges to seal (check a tutorial if unfamiliar).
   - Cook in boiling water for about 7 minutes or freeze for later use.
-created: 2025-11-16
+created: 15-11-2025
+category: Dumplings
 tags:
   - vegan
   - georgian

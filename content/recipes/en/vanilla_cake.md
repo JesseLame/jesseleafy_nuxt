@@ -31,6 +31,7 @@ instructions:
   - Stir until melted and smooth. Let it cool until it reaches a yoghurt-like consistency.
   - Pour the ganache over the cooled cake, letting it drip naturally along the sides.
 created: 31-10-2025
+category: Baked Goods
 tags:
   - dessert
   - cake

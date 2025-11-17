@@ -31,6 +31,7 @@ declare module '@nuxt/content' {
     created: string;
     tags?: string[];
     categories?: string[];
+    category?: string;
   }
   
 

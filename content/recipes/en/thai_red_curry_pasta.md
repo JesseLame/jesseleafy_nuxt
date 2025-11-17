@@ -29,6 +29,7 @@ instructions:
   - Place lemongrass, galangal, ginger, lime leaves, garlic, shallots, ginger, and miso into a tall container. Use an immersion blender to process until smooth, scraping down as needed.
   - Add the ground spice mix to the blended herb paste. Blend again to fully combine into a smooth, vibrant chili paste.
 created: 11-06-2025
+category: Condiments
 tags:
   - chili paste
   - spice blend

@@ -41,6 +41,7 @@ instructions:
   - To serve, place noodles into bowls, pour over the soup, and top with sautéed mushrooms, tofu, dumplings, and chopped spring onions.
   - Garnish with additional lime leaves if desired.
 created: 12-06-2025
+category: Main Dishes
 tags:
   - thai
   - noodle soup

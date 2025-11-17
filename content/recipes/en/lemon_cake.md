@@ -29,6 +29,7 @@ instructions:
   - Let the cake cool completely in the tin on a rack.
   - Once cooled, remove from the tin. For the glaze, mix powdered sugar with lemon juice and water until smooth, then pour over the cake.
 created: 2025-06-19
+category: Main Dishes
 tags:
   - cake
   - gluten-free

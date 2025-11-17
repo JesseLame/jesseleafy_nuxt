@@ -39,6 +39,7 @@ instructions:
   - Stir in the grated Parmesan until melted and creamy.
   - Serve hot with white rice and sliced potatoes. Optionally, top with extra Parmesan.
 created: 23-10-2025
+category: Main Dishes
 tags:
   - peruvian
   - vegan

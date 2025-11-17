@@ -41,15 +41,12 @@ instructions:
   - If the mixture becomes too dry, add a splash of water to maintain a saucy consistency.
   - Season to taste with salt and pepper before serving.
 created: 06-06-2025
+category: Main Dishes
 tags:
   - vegan
   - rendang
   - indonesian
   - comfort food
-categories:
-  - dinner
-  - comfort food
-  - batch cooking
 ---
 
 # Vegan Rendang with Mushrooms and Plant-Based Chicken

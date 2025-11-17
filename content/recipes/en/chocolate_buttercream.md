@@ -26,6 +26,7 @@ instructions:
   - Gradually add the melted white chocolate in portions, mixing well between additions.
   - Your buttercream is now ready to use — perfect for decorating cakes and cupcakes.
 created: 13-10-2025
+category: Baked Goods
 tags:
   - dessert
   - buttercream

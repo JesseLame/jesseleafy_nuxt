@@ -34,6 +34,7 @@ instructions:
   -  Combine the hot mushroom mixture with roux paste, walnuts, and nutmeg in a food processor. Add miso, soy sauce, or lemon juice if using. Blitz to desired texture.
   - Line a small loaf tin or container with plastic wrap. Spoon in the mixture, press firmly to eliminate air pockets, and cover. Chill for at least 4 hours (preferably overnight) until firm.
 created: 06-14-2025
+category: Sides
 tags:
   - mushroom
   - pâté

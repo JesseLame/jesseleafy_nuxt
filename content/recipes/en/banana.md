@@ -31,16 +31,12 @@ instructions:
   - If using, place the halved banana on top and gently press it into the batter.
   - Bake for 40–45 minutes or until golden and a wooden skewer comes out clean.
 created: 10-06-2025
+category: Baked Goods
 tags:
   - baking
   - banana bread
   - almond flour
   - comfort food
-categories:
-  - baking
-  - comfort food
-  - breakfast
-  - snacks
 ---
 
 # Banana Bread Recipe

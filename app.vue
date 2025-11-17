@@ -28,6 +28,11 @@ const { data: recentRecipes } = await useAsyncData('recentRecipes', async () => 
     .sort((a, b) => b._createdParsed - a._createdParsed)
     .slice(0, 6)
 
+    
+
+  console.log('allRecipes:', allRecipes)
+  console.log('recentRecipes:', recentRecipes)
+
   return recentRecipes
 })
 

@@ -48,15 +48,12 @@ instructions:
   - Transfer pan (or mixture) to the preheated oven and bake uncovered for 60 minutes. Stir and return for another 30 minutes.
   - After roasting, stir in the plant milk. Season with salt and black pepper to taste.
 created: 09-06-2025
+category: Main Dishes
 tags:
   - vegan
   - ragu
   - comfort food
   - pasta
-  - batch cooking
-categories:
-  - dinner
-  - comfort food
   - batch cooking
 ---
 

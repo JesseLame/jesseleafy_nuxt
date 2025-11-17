@@ -33,6 +33,7 @@ instructions:
   - Add onion and bell pepper; cook for 1 min.
   - Stir sauce again and pour into the pan. Stir until thickened.
 created: 03-08-2025
+category: Main Dishes
 tags:
   - plant-based
   - air fryer

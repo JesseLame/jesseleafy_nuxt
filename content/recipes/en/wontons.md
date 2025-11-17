@@ -27,6 +27,7 @@ instructions:
   - Steam, boil, or fry the wontons until cooked through (about 5–7 minutes depending on method).
   - Serve with dipping sauce or in broth.
 created: 20-07-2025
+category: Dumplings
 tags:
   - vegetarian
   - wontons

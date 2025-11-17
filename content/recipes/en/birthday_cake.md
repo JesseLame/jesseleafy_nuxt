@@ -33,6 +33,7 @@ instructions:
   - Use the remaining buttercream to frost the top and sides of the cake.
   - Decorate with additional sprinkles if desired.
 created: 13-10-2025
+category: Baked Goods
 tags:
   - cake
   - funfetti

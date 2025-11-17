@@ -31,6 +31,7 @@ instructions:
   - Stir in the chickpeas and simmer just until heated through.
   - Serve hot, garnished with dill, green onions, and a dollop of sour cream if desired.
 created: 2025-09-01
+category: Main Dishes
 tags:
   - soup
   - sauerkraut

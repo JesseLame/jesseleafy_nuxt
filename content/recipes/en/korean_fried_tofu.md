@@ -32,6 +32,7 @@ instructions:
   - Add the tofu to the sauce and toss to coat evenly.
   - Cook for another 2–3 minutes, ensuring the tofu is heated through and well coated in the glaze.
 created: 12-06-2025
+category: Main Dishes
 tags:
   - korean
   - tofu

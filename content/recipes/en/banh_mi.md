@@ -35,15 +35,12 @@ instructions:
   - Layer with cucumber, pickled vegetables, sautéed mushrooms, chili, and herbs.
   - Serve immediately, optionally with extra lime wedges on the side.
 created: 09-06-2025
+category: Sandwiches
 tags:
   - vietnamese
   - sandwich
   - vegetarian
   - street food
-categories:
-  - lunch
-  - dinner
-  - comfort food
 ---
 
 # Bánh Mì with Marinated Mushrooms

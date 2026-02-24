@@ -29,8 +29,10 @@ export { withCtx, withDirectives, withKeys, withMemo, withModifiers, withScopeId
 export { requestIdleCallback, cancelIdleCallback } from '#app/compat/idle-callback';
 export { setInterval } from '#app/compat/interval';
 export { useComments } from '../composables/useComments';
+export { useRecipeLanguage, RecipeLang } from '../composables/useRecipeLanguage';
 export { queryCollection, queryCollectionSearchSections, queryCollectionNavigation, queryCollectionItemSurroundings } from '../node_modules/@nuxt/content/dist/runtime/app';
 export { flatUnwrap as unwrapSlot } from '../node_modules/@nuxtjs/mdc/dist/runtime/utils/node';
 export { parseMarkdown } from '../node_modules/@nuxtjs/mdc/dist/runtime/parser';
 export { stringifyMarkdown } from '../node_modules/@nuxtjs/mdc/dist/runtime/stringify';
+export { useNuxtDevTools } from '../node_modules/@nuxt/devtools/dist/runtime/use-nuxt-devtools';
 export { definePageMeta } from '../node_modules/nuxt/dist/pages/runtime/composables';

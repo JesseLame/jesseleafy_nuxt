@@ -4,6 +4,7 @@ description: A comforting Persian herb, legume, and noodle soup finished with yo
 description_long: |
   Ash Reshteh is a hearty Persian soup built with legumes, greens, and noodles.
   This version is rich with fresh herbs and spinach, then finished with Greek yogurt and lemon for a creamy, bright bowl.
+image: /images/ash_reshteh.jpg
 ingredients:
   - 1 large onion, diced
   - 4 large garlic cloves, diced

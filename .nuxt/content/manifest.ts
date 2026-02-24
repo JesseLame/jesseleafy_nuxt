@@ -1,6 +1,6 @@
 export const checksums = {
-  "content": "v3.5.0---_9B6exY6eg377DuM1cY7l5yxs-ys_2EWpIoADVuwyk",
-  "recipes": "v3.5.0--FBFx7ChrdACyIiUHqvmgxuC9Y3lLlAyPc1aiBqNNjdU"
+  "content": "v3.5.0--5lQgxjKVed8y8bCxreBhqJ6ncpvJi83uhH93D7Hfcrw",
+  "recipes": "v3.5.0--T0m6H8OL85VA7V07IqIvKjtRt21GX4FvHTkFCoW2vX0"
 }
 export const checksumsStructure = {
   "content": "bgIYhpjRuV8zbHJE_CfelwKpJ_Td6YuGJwixiek8lmI",

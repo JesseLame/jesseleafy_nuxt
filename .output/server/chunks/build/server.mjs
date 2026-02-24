@@ -1357,8 +1357,8 @@ const getDefaultCachedData = (key, nuxtApp, ctx) => {
   }
 };
 const checksums = {
-  "content": "v3.5.0--5lQgxjKVed8y8bCxreBhqJ6ncpvJi83uhH93D7Hfcrw",
-  "recipes": "v3.5.0--T0m6H8OL85VA7V07IqIvKjtRt21GX4FvHTkFCoW2vX0"
+  "content": "v3.5.0--DZ-jrUaomLfcLg1uvqQd-0bweDgEbbxdEIiHkz5i0vE",
+  "recipes": "v3.5.0--qSTujPOvxY7cDLFqub1ApwHih5DKAHKH_qNhcRJtoCA"
 };
 const tables = {
   "content": "_content_content",

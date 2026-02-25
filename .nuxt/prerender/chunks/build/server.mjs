@@ -412,7 +412,7 @@ const _routes = [
   {
     name: "index",
     path: "/",
-    component: () => import('./index-DH7Hm0G5.mjs')
+    component: () => import('./index-DeVy20B3.mjs')
   },
   {
     name: "contact",
@@ -427,12 +427,12 @@ const _routes = [
   {
     name: "recipes",
     path: "/recipes",
-    component: () => import('./index-D-qcFk7D.mjs')
+    component: () => import('./index-2bNQfAb8.mjs')
   },
   {
     name: "recipes-lang-slug",
     path: "/recipes/:lang()/:slug()",
-    component: () => import('./_slug_-Clekl42L.mjs')
+    component: () => import('./_slug_-QEaTUETy.mjs')
   }
 ];
 const _wrapInTransition = (props, children) => {
@@ -806,7 +806,7 @@ const revive_payload_server_MVtmlZaQpj6ApFmshWfUWl5PehCebzaBf2NuRMiIbms = /* @__
     }
   }
 });
-const LazyProseA = defineAsyncComponent(() => import('./ProseA-D4yCYKuQ.mjs').then((r) => r["default"] || r.default || r));
+const LazyProseA = defineAsyncComponent(() => import('./ProseA-DWPUdFXg.mjs').then((r) => r["default"] || r.default || r));
 const LazyProseBlockquote = defineAsyncComponent(() => import('./ProseBlockquote-BJLdDd6w.mjs').then((r) => r["default"] || r.default || r));
 const LazyProseCode = defineAsyncComponent(() => import('./ProseCode-Bq0TaZHq.mjs').then((r) => r["default"] || r.default || r));
 const LazyProseEm = defineAsyncComponent(() => import('./ProseEm-DR89C1OW.mjs').then((r) => r["default"] || r.default || r));
@@ -928,7 +928,7 @@ const plugins = [
   prerender_server_sqIxOBipVr4FbVMA9kqWL0wT8FPop6sKAXLVfifsJzk
 ];
 const layouts = {
-  default: defineAsyncComponent(() => import('./default-Coqvi52d.mjs').then((m) => m.default || m))
+  default: defineAsyncComponent(() => import('./default-97FYD7mq.mjs').then((m) => m.default || m))
 };
 const LayoutLoader = defineComponent({
   name: "LayoutLoader",
@@ -1424,8 +1424,8 @@ const getDefaultCachedData = (key, nuxtApp, ctx) => {
   }
 };
 const checksums = {
-  "content": "v3.5.0--DZ-jrUaomLfcLg1uvqQd-0bweDgEbbxdEIiHkz5i0vE",
-  "recipes": "v3.5.0--qSTujPOvxY7cDLFqub1ApwHih5DKAHKH_qNhcRJtoCA"
+  "content": "v3.5.0--GxYsIRyCEMLs30Fk-HRAnZ3MR3lTgkCxAs_JCRnUbjk",
+  "recipes": "v3.5.0--JhLx0jqFyjYAbX88eTjv6_NKhyB7qeJACMXR4-fvJmI"
 };
 const tables = {
   "content": "_content_content",
@@ -1678,7 +1678,7 @@ const _sfc_main$1 = {
     const statusMessage = _error.statusMessage ?? (is404 ? "Page Not Found" : "Internal Server Error");
     const description = _error.message || _error.toString();
     const stack = void 0;
-    const _Error404 = defineAsyncComponent(() => import('./error-404-PqLiQbYv.mjs'));
+    const _Error404 = defineAsyncComponent(() => import('./error-404-BRcEXsss.mjs'));
     const _Error = defineAsyncComponent(() => import('./error-500-m5hzVbHd.mjs'));
     const ErrorTemplate = is404 ? _Error404 : _Error;
     return (_ctx, _push, _parent, _attrs) => {
@@ -1761,5 +1761,5 @@ let entry;
 }
 const entry$1 = (ssrContext) => entry(ssrContext);
 
-export { useSeoMeta as a, useAsyncData as b, useRuntimeConfig as c, useRouter as d, entry$1 as default, useNuxtApp as e, nuxtLinkDefaults as f, navigateTo as n, queryCollection as q, resolveRouteObject as r, useHead as u };
+export { useSeoMeta as a, useAsyncData as b, useRuntimeConfig as c, useNuxtApp as d, entry$1 as default, useRouter as e, nuxtLinkDefaults as f, navigateTo as n, queryCollection as q, resolveRouteObject as r, useHead as u };
 //# sourceMappingURL=server.mjs.map

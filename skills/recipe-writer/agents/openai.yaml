@@ -1,0 +1,4 @@
+interface:
+  display_name: "Recipe Writer"
+  short_description: "Write repo-ready recipe markdown files"
+  default_prompt: "Create or update recipe markdown files for this repository's recipe schema and tone."

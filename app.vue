@@ -4,21 +4,9 @@ import { parse } from 'date-fns'
 const { data: recentRecipes } = await useAsyncData('recentRecipes', async () => {
   const allRecipes = await queryCollection('recipes').all()
 
-  const categories = [...new Set(
-    allRecipes
-      .map((r) => r.categories)
-      .flat()
-      .filter((c) => c && c !== 'uncategorized')
-  )]
+  const englishRecipes = allRecipes.filter((recipe) => recipe.path?.startsWith('/recipes/en/'))
 
-  const tags = [...new Set(
-    allRecipes
-      .map((r) => r.tags)
-      .flat()
-      .filter((t) => t && t !== 'uncategorized')
-  )]
-
-  const recentRecipes = allRecipes
+  const recentRecipes = englishRecipes
     .filter((r) => r.created)
     .map((r) => ({
       ...r,
@@ -27,11 +15,6 @@ const { data: recentRecipes } = await useAsyncData('recentRecipes', async () => 
     .filter((r) => !isNaN(r._createdParsed))
     .sort((a, b) => b._createdParsed - a._createdParsed)
     .slice(0, 6)
-
-    
-
-  console.log('allRecipes:', allRecipes)
-  console.log('recentRecipes:', recentRecipes)
 
   return recentRecipes
 })

@@ -1,8 +1,6 @@
 <script setup>
 const { data: recentRecipes } = await useAsyncData('recentRecipes', async () => {});
 
-console.log(recentRecipes.value);
-
 
 useSeoMeta({
     title: 'Jesse\'s Leafy Feasts - Home',
@@ -50,5 +48,4 @@ useSeoMeta({
         </div>
     </div>
 </template>
-
 

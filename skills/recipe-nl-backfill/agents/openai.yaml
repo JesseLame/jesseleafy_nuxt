@@ -1,0 +1,4 @@
+interface:
+  display_name: "Recipe NL Backfill"
+  short_description: "Find EN-only recipes and create Dutch markdown files"
+  default_prompt: "Find recipes missing in Dutch and backfill nl markdown files with translated content."

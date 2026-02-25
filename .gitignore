@@ -404,3 +404,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# Nuxt generated artifacts
+.nuxt/
+.data/
+.output/

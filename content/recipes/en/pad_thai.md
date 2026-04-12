@@ -25,7 +25,7 @@ ingredients:
     - 70 g garlic chives, cut into 4 cm pieces
     - A handful of chopped peanuts
     - 1 lime, cut into wedges
-    - Garnishes for serving: extra chili flakes, roasted peanuts, bean sprouts, and garlic chives
+    - "Garnishes for serving: extra chili flakes, roasted peanuts, bean sprouts, and garlic chives"
 instructions:
   - To make the sauce, add the palm sugar and 2 tbsp of the water to a small pot over medium heat. Stir continuously until the sugar melts and darkens slightly.
   - Immediately add the remaining water, soy sauce, and tamarind paste. The sugar may harden at first; this is expected.

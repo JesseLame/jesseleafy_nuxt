@@ -25,7 +25,7 @@ ingredients:
     - 70 g knoflookbieslook, in stukken van 4 cm
     - Een handje fijngehakte pinda's
     - 1 limoen, in partjes
-    - Garnituren om te serveren: extra chilivlokken, geroosterde pinda's, tauge en knoflookbieslook
+    - "Garnituren om te serveren: extra chilivlokken, geroosterde pinda's, tauge en knoflookbieslook"
 instructions:
   - Maak eerst de saus. Voeg palmsuiker en 2 el van het water toe aan een kleine pan op middelhoog vuur. Roer continu tot de suiker smelt en iets donkerder kleurt.
   - Voeg direct het resterende water, de sojasaus en de tamarinde toe. De suiker kan eerst hard worden; dat is normaal.

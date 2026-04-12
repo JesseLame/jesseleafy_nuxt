@@ -27,3 +27,121 @@ A skill is a set of local instructions to follow that is stored in a `SKILL.md` 
   - Avoid deep reference-chasing: prefer opening only files directly linked from `SKILL.md` unless you're blocked.
   - When variants exist (frameworks, providers, domains), pick only the relevant reference file(s) and note that choice.
 - Safety and fallback: If a skill can't be applied cleanly (missing files, unclear instructions), state the issue, pick the next-best approach, and continue.
+
+## Repo Operating Guide
+
+### Purpose
+- Act as an implementation-focused Nuxt copilot for this repository.
+- Make concrete, low-risk changes with minimal speculation.
+- Cover both application code changes and recipe content updates.
+- Treat this section as repository policy, separate from the Skills definitions above.
+
+### Project Snapshot
+- Stack: Nuxt 3, Vue 3, `@nuxt/content`, Tailwind CSS, and a manually created Supabase client.
+- Preferred package manager: `npm`, because `package-lock.json` is committed.
+- Main source-of-truth paths:
+  - `pages/`
+  - `layouts/`
+  - `composables/`
+  - `content/recipes/`
+  - `content.config.ts`
+  - `nuxt.config.ts`
+  - `assets/css/`
+- Runtime language contract in code: `RecipeLang = 'en' | 'nl'`.
+- Canonical recipe detail implementation: `pages/recipes/[lang]/[slug].vue`.
+- `pages/testPage.vue` exists, but it is not the source of truth for recipe-detail behavior.
+- Do not assume `@nuxtjs/supabase` is configured in Nuxt just because it is installed; the current comment flow is built around a raw `@supabase/supabase-js` client in `composables/useComments.ts`.
+
+### Working Rules
+- Read first, then edit.
+- Prefer minimal diffs and preserve style in touched files.
+- Avoid broad formatting passes; the repo has mixed formatting and no committed formatter config.
+- Do not refactor unrelated code.
+- Do not commit secrets or modify `.env` values.
+- When behavior changes, explain the user-visible impact and verify with commands.
+
+### Command Policy
+- Install dependencies: `npm install`
+- Start local development: `npm run dev`
+- Primary verification command: `npm run build`
+- Lint command: `npm run lint`
+- As of April 12, 2026, `npm run lint` fails because ESLint 9 is installed but the repo does not contain an `eslint.config.js`, `eslint.config.mjs`, or `eslint.config.cjs`.
+- No formatter config is currently committed.
+- No test runner config is currently committed.
+- Until lint and automated tests are configured, rely on `npm run build` plus task-specific checks and careful reporting.
+
+### Code Change Guidelines
+- Reuse the Nuxt/Vue patterns already present in the repo.
+- Prefer `<script setup lang="ts">` when editing or adding typed Vue files.
+- Keep data fetching aligned with existing usage of `useAsyncData` and `queryCollection`.
+- Keep route-param handling and composable usage aligned with `pages/recipes/index.vue`, `pages/recipes/[lang]/[slug].vue`, and `composables/useRecipeLanguage.ts`.
+- Treat `pages/recipes/[lang]/[slug].vue` as the canonical recipe-detail implementation, not `pages/testPage.vue`.
+- Avoid new dependencies unless they are necessary and explicitly justified.
+- Remove debug `console.log` statements from production-facing changes unless debugging output was explicitly requested.
+
+### Content Change Guidelines
+- Follow the `recipes` collection schema in `content.config.ts`.
+- Required frontmatter keys:
+  - `title`
+  - `description`
+  - `ingredients`
+  - `instructions`
+  - `created`
+- Optional frontmatter keys allowed by the current schema:
+  - `description_long`
+  - `image`
+  - `tags`
+  - `categories`
+  - `category`
+- Keep `created` in `dd-MM-yyyy` format.
+- `ingredients` must remain either:
+  - an array of strings, or
+  - an object whose values are arrays of strings.
+- Keep recipe files under `content/recipes/<lang>/<slug>.md`, where `<lang>` is `en` or `nl`.
+- If a recipe exists in both languages, keep the slug identical across `en` and `nl`.
+- Use internal recipe links as `/recipes/<slug>` so they stay compatible with runtime normalization in `pages/recipes/[lang]/[slug].vue`.
+- When adding filter metadata, prefer `category` because `pages/recipes/index.vue` currently filters on `category`; `categories` is allowed by schema but not used by the current list UI.
+- Use real image paths from existing repo assets, typically under `/images/...`, and do not invent image values.
+- English and Dutch recipe filenames are currently in parity; do not hardcode stale coverage claims into this file.
+- If future one-language recipes are introduced, preserve the current safe translation-unavailable behavior in `pages/recipes/[lang]/[slug].vue` instead of introducing broken routing.
+
+### State and Runtime Contracts
+- Runtime environment variables currently used by the app:
+  - `SUPABASE_URL`
+  - `SUPABASE_ANON_KEY`
+- Persisted client-side storage keys currently in use:
+  - `recipe_language`
+  - `groceries`
+- `recipe_language` is managed by `composables/useRecipeLanguage.ts`.
+- `groceries` is written from `pages/recipes/[lang]/[slug].vue` and read from `pages/list.vue`.
+- Existing language support is `RecipeLang = 'en' | 'nl'`; do not expand language handling casually.
+
+### Public APIs / Interfaces / Types
+- This file documents repository process only; it does not change runtime APIs.
+- Existing contracts to preserve include:
+  - `RecipeLang = 'en' | 'nl'`
+  - `SUPABASE_URL`
+  - `SUPABASE_ANON_KEY`
+  - the `recipes` frontmatter schema in `content.config.ts`
+  - the client persistence keys `recipe_language` and `groceries`
+
+### Completion Checklist
+- State exactly what changed and why.
+- List the commands that were run and their outcomes.
+- Call out skipped checks and explain why they were skipped.
+- Never claim `npm run lint` passed while flat ESLint config is still missing.
+- Mention whether EN/NL recipe parity changed.
+- If the change touches recipe detail, listing, or localization behavior, verify language switching for at least one existing translated slug.
+- If the change introduces one-language content or touches translation-fallback behavior, verify that translation-unavailable behavior remains safe.
+- If the change touches recipe markdown, validate frontmatter shape and `created` formatting against `content.config.ts`.
+- If the change touches comments or Supabase-related code, explicitly confirm that no secret values were added to tracked files.
+
+### Edge Cases and Failure Modes
+- Slug mismatches between translated recipes can surface false missing-translation behavior.
+- Internal recipe links can resolve to dead routes when the linked slug does not exist in the active language.
+- Changing the `recipe_language` or `groceries` keys can silently break persisted client state.
+- Assuming Nuxt Supabase module integration where the repo actually uses a raw client can lead to incorrect edits.
+
+### Out-of-Scope / Escalation
+- Ask before making broad changes such as architecture rewrites, schema changes, lint-stack migration, or adding recipe languages beyond `en` and `nl`.
+- If repository policy conflicts with a direct user instruction, follow the direct user instruction and document the conflict clearly.

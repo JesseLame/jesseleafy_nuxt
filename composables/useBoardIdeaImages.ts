@@ -3,8 +3,10 @@ import type { BoardIdeaUploadImage, Idea, IdeaMetadata } from '~/types/board';
 
 export const BOARD_IDEA_IMAGE_BUCKET = 'board-idea-images';
 export const BOARD_IDEA_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+export const DEFAULT_BOARD_CARD_WIDTH = 260;
 export const DEFAULT_BOARD_CARD_HEIGHT = 160;
-export const BOARD_IMAGE_CARD_HEIGHT = 240;
+export const BOARD_IMAGE_CARD_WIDTH = 320;
+export const BOARD_IMAGE_CARD_HEIGHT = 380;
 
 type IdeaImageSource = Pick<Idea, 'image_url' | 'metadata'>;
 

@@ -41,6 +41,7 @@ export function useBoards() {
 
 	const normalizeIdea = (idea: Idea): Idea => ({
 		...idea,
+		reference_url: idea.reference_url?.trim() || null,
 		tags: Array.isArray(idea.tags) ? idea.tags.filter(Boolean) : [],
 		metadata: idea.metadata ?? {},
 	});
@@ -142,6 +143,7 @@ export function useBoards() {
 					type: input.type,
 					description: input.description?.trim() || null,
 					image_url: input.image_url?.trim() || null,
+					reference_url: input.reference_url?.trim() || null,
 					notes: input.notes?.trim() || null,
 					tags: (input.tags ?? []).map((tag) => tag.trim()).filter(Boolean),
 					metadata: input.metadata ?? {},
@@ -167,6 +169,7 @@ export function useBoards() {
 				type: input.type,
 				description: input.description?.trim() || null,
 				image_url: input.image_url?.trim() || null,
+				reference_url: input.reference_url?.trim() || null,
 				notes: input.notes?.trim() || null,
 				tags: (input.tags ?? []).map((tag) => tag.trim()).filter(Boolean),
 				metadata: input.metadata ?? {},

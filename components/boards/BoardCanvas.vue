@@ -8,6 +8,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
+	'card-edit-requested': [item: BoardItemWithIdea];
 	'card-pointerdown': [event: PointerEvent, item: BoardItemWithIdea];
 }>();
 </script>
@@ -36,6 +37,7 @@ const emit = defineEmits<{
 					:key="item.id"
 					:item="item"
 					:selected="selectedItemIds.includes(item.id)"
+					@edit-requested="emit('card-edit-requested', item)"
 					@pointerdown="emit('card-pointerdown', $event, item)"
 				/>
 

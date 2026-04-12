@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 import BoardCanvas from '~/components/boards/BoardCanvas.vue';
+import BoardIdeaEditorModal from '~/components/boards/BoardIdeaEditorModal.vue';
 import BoardHeader from '~/components/boards/BoardHeader.vue';
 import BoardIdeaLibrary from '~/components/boards/BoardIdeaLibrary.vue';
 import BoardToolsPanel from '~/components/boards/BoardToolsPanel.vue';
@@ -22,10 +23,13 @@ const {
 	conceptItemCounts,
 	conceptNotes,
 	conceptTitle,
+	closeIdeaEditorModal,
 	editingIdeaId,
+	editingBoardItemId,
 	filteredIdeas,
 	handleCreateConcept,
 	handleDeleteIdea,
+	handleDeleteEditingIdea,
 	handleDeleteSelection,
 	handleDuplicateConcept,
 	handleIdeaImageFileSelected,
@@ -33,16 +37,19 @@ const {
 	handleSaveIdea,
 	handleUngroupSelection,
 	ideaDescription,
+	ideaEditorModalTitle,
 	ideaImageError,
 	ideaImageFileName,
 	ideaImageMode,
 	ideaImagePreviewUrl,
 	ideaImageUrl,
+	ideaReferenceUrl,
 	ideaNotes,
 	ideaTagsInput,
 	ideaTitle,
 	ideaType,
 	isLibraryOpen,
+	isIdeaEditorModalOpen,
 	isRightRailOpen,
 	isSavingIdea,
 	leftColumnClass,
@@ -52,6 +59,7 @@ const {
 	loadingBoard,
 	mergeBoardItem,
 	nextZIndex,
+	openIdeaEditorModalFromBoardItem,
 	pageError,
 	populateIdeaForm,
 	removeIdeaImage,
@@ -138,6 +146,7 @@ watch(
 					v-model:idea-description="ideaDescription"
 					v-model:idea-image-mode="ideaImageMode"
 					v-model:idea-image-url="ideaImageUrl"
+					v-model:idea-reference-url="ideaReferenceUrl"
 					v-model:idea-notes="ideaNotes"
 					v-model:idea-tags-input="ideaTagsInput"
 					v-model:library-type-filter="libraryTypeFilter"
@@ -182,8 +191,33 @@ watch(
 			<BoardCanvas
 				:board-items="sortedBoardItems"
 				:selected-item-ids="selectedItemIds"
+				@card-edit-requested="openIdeaEditorModalFromBoardItem"
 				@card-pointerdown="handleCanvasCardPointerDown"
 			/>
 		</div>
+
+		<BoardIdeaEditorModal
+			v-if="editingBoardItemId"
+			v-model:idea-title="ideaTitle"
+			v-model:idea-type="ideaType"
+			v-model:idea-description="ideaDescription"
+			v-model:idea-image-mode="ideaImageMode"
+			v-model:idea-image-url="ideaImageUrl"
+			v-model:idea-reference-url="ideaReferenceUrl"
+			v-model:idea-notes="ideaNotes"
+			v-model:idea-tags-input="ideaTagsInput"
+			:editing-idea-id="editingIdeaId"
+			:image-error="ideaImageError"
+			:image-file-name="ideaImageFileName"
+			:image-preview-url="ideaImagePreviewUrl"
+			:is-open="isIdeaEditorModalOpen"
+			:is-saving-idea="isSavingIdea"
+			:modal-title="ideaEditorModalTitle"
+			@close="closeIdeaEditorModal"
+			@delete-current-idea="handleDeleteEditingIdea"
+			@remove-image="removeIdeaImage"
+			@save-idea="handleSaveIdea"
+			@select-image-file="handleIdeaImageFileSelected"
+		/>
 	</div>
 </template>

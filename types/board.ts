@@ -24,6 +24,7 @@ export interface Idea {
 	type: IdeaType;
 	description: string | null;
 	image_url: string | null;
+	reference_url: string | null;
 	notes: string | null;
 	tags: string[];
 	metadata: IdeaMetadata;
@@ -88,6 +89,7 @@ export interface IdeaInput {
 	type: IdeaType;
 	description?: string | null;
 	image_url?: string | null;
+	reference_url?: string | null;
 	notes?: string | null;
 	tags?: string[];
 	metadata?: IdeaMetadata;

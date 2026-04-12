@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import BoardIdeaEditorForm from '~/components/boards/BoardIdeaEditorForm.vue';
 import BoardIdeaImage from '~/components/boards/BoardIdeaImage.vue';
-import { BOARD_IDEA_IMAGE_MAX_BYTES } from '~/composables/useBoardIdeaImages';
 import type { Idea, IdeaType } from '~/types/board';
 import { IDEA_TYPE_OPTIONS, formatIdeaTypeLabel } from '~/utils/board';
 
@@ -31,21 +31,11 @@ const ideaType = defineModel<IdeaType>('ideaType', { required: true });
 const ideaDescription = defineModel<string>('ideaDescription', { required: true });
 const ideaImageMode = defineModel<'url' | 'upload'>('ideaImageMode', { required: true });
 const ideaImageUrl = defineModel<string>('ideaImageUrl', { required: true });
+const ideaReferenceUrl = defineModel<string>('ideaReferenceUrl', { required: true });
 const ideaNotes = defineModel<string>('ideaNotes', { required: true });
 const ideaTagsInput = defineModel<string>('ideaTagsInput', { required: true });
 const libraryTypeFilter = defineModel<'all' | IdeaType>('libraryTypeFilter', { required: true });
 const libraryTagFilter = defineModel<string>('libraryTagFilter', { required: true });
-
-const maxUploadSizeMb = BOARD_IDEA_IMAGE_MAX_BYTES / (1024 * 1024);
-
-const handleFileChange = (event: Event) => {
-	const input = event.target as HTMLInputElement | null;
-	emit('select-image-file', input?.files?.[0] ?? null);
-
-	if (input) {
-		input.value = '';
-	}
-};
 </script>
 
 <template>
@@ -86,158 +76,25 @@ const handleFileChange = (event: Event) => {
 		</div>
 
 		<div class="mt-5">
-			<form class="space-y-3" @submit.prevent="emit('save-idea')">
-				<div>
-					<label for="idea-title" class="block text-sm font-medium text-gray-700">
-						Title
-					</label>
-					<input
-						id="idea-title"
-						v-model="ideaTitle"
-						type="text"
-						maxlength="120"
-						class="mt-1 w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/30"
-						placeholder="Swiss buttercream"
-					/>
-				</div>
-
-				<div>
-					<label for="idea-type" class="block text-sm font-medium text-gray-700">
-						Type
-					</label>
-					<select
-						id="idea-type"
-						v-model="ideaType"
-						class="mt-1 w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/30"
-					>
-						<option v-for="option in IDEA_TYPE_OPTIONS" :key="option.value" :value="option.value">
-							{{ option.label }}
-						</option>
-					</select>
-				</div>
-
-				<div>
-					<label for="idea-tags" class="block text-sm font-medium text-gray-700">
-						Tags
-					</label>
-					<input
-						id="idea-tags"
-						v-model="ideaTagsInput"
-						type="text"
-						class="mt-1 w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/30"
-						placeholder="wedding, pastel, elegant"
-					/>
-				</div>
-
-				<div>
-					<label for="idea-description" class="block text-sm font-medium text-gray-700">
-						Description
-					</label>
-					<textarea
-						id="idea-description"
-						v-model="ideaDescription"
-						rows="3"
-						class="mt-1 w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/30"
-						placeholder="Short explanation of what this idea adds."
-					/>
-				</div>
-
-				<div>
-					<label class="block text-sm font-medium text-gray-700">
-						Image
-					</label>
-
-					<div class="mt-1 grid grid-cols-2 gap-2 rounded-2xl bg-green-50 p-1">
-						<button
-							type="button"
-							class="rounded-xl px-3 py-2 text-sm font-semibold transition"
-							:class="ideaImageMode === 'url' ? 'bg-white text-green-900 shadow-sm' : 'text-green-800/80 hover:bg-white/70'"
-							@click="ideaImageMode = 'url'"
-						>
-							URL
-						</button>
-						<button
-							type="button"
-							class="rounded-xl px-3 py-2 text-sm font-semibold transition"
-							:class="ideaImageMode === 'upload' ? 'bg-white text-green-900 shadow-sm' : 'text-green-800/80 hover:bg-white/70'"
-							@click="ideaImageMode = 'upload'"
-						>
-							Upload
-						</button>
-					</div>
-
-					<div v-if="ideaImageMode === 'url'" class="mt-3">
-						<input
-							id="idea-image-url"
-							v-model="ideaImageUrl"
-							type="url"
-							class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/30"
-							placeholder="https://..."
-						/>
-					</div>
-
-					<div v-else class="mt-3 space-y-3">
-						<input
-							id="idea-image-upload"
-							accept="image/*"
-							type="file"
-							class="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 file:mr-3 file:rounded-full file:border-0 file:bg-green-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-green-900 hover:file:bg-green-200"
-							@change="handleFileChange"
-						/>
-
-						<p class="text-xs text-gray-500">
-							Upload JPG, PNG, WEBP, or another image format up to {{ maxUploadSizeMb }} MB.
-						</p>
-
-						<p v-if="imageFileName" class="text-sm text-gray-600">
-							{{ imageFileName }}
-						</p>
-					</div>
-
-					<div v-if="imagePreviewUrl" class="mt-3 overflow-hidden rounded-2xl border border-green-900/10 bg-green-50/40 p-3">
-						<img
-							:src="imagePreviewUrl"
-							alt="Idea image preview"
-							class="h-40 w-full rounded-2xl object-cover"
-						>
-
-						<div class="mt-3 flex justify-end">
-							<button
-								type="button"
-								class="rounded-full border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50"
-								@click="emit('remove-image')"
-							>
-								Remove image
-							</button>
-						</div>
-					</div>
-
-					<p v-if="imageError" class="mt-2 text-sm text-red-600">
-						{{ imageError }}
-					</p>
-				</div>
-
-				<div>
-					<label for="idea-notes" class="block text-sm font-medium text-gray-700">
-						Notes
-					</label>
-					<textarea
-						id="idea-notes"
-						v-model="ideaNotes"
-						rows="3"
-						class="mt-1 w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/30"
-						placeholder="Extra context, pairings, or reminders."
-					/>
-				</div>
-
-				<button
-					type="submit"
-					:disabled="isSavingIdea"
-					class="w-full rounded-2xl bg-green-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
-				>
-					{{ isSavingIdea ? 'Saving...' : editingIdeaId ? 'Update idea' : 'Add idea' }}
-				</button>
-			</form>
+			<BoardIdeaEditorForm
+				v-model:idea-title="ideaTitle"
+				v-model:idea-type="ideaType"
+				v-model:idea-description="ideaDescription"
+				v-model:idea-image-mode="ideaImageMode"
+				v-model:idea-image-url="ideaImageUrl"
+				v-model:idea-reference-url="ideaReferenceUrl"
+				v-model:idea-notes="ideaNotes"
+				v-model:idea-tags-input="ideaTagsInput"
+				:editing-idea-id="editingIdeaId"
+				id-prefix="idea-library"
+				:image-error="imageError"
+				:image-file-name="imageFileName"
+				:image-preview-url="imagePreviewUrl"
+				:is-saving-idea="isSavingIdea"
+				@remove-image="emit('remove-image')"
+				@save-idea="emit('save-idea')"
+				@select-image-file="emit('select-image-file', $event)"
+			/>
 
 			<div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
 				<div>
@@ -311,6 +168,17 @@ const handleFileChange = (event: Event) => {
 					<p v-if="idea.description" class="mt-2 text-sm text-gray-600">
 						{{ idea.description }}
 					</p>
+
+					<div v-if="idea.reference_url" class="mt-3">
+						<a
+							:href="idea.reference_url"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-flex items-center rounded-full border border-green-700/20 px-3 py-1.5 text-xs font-semibold text-green-900 transition hover:bg-green-50"
+						>
+							Open link
+						</a>
+					</div>
 
 					<div v-if="idea.tags.length" class="mt-3 flex flex-wrap gap-2">
 						<span

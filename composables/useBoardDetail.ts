@@ -3,6 +3,7 @@ import type { Board, BoardItemWithIdea, BoardIdeaUploadImage, Concept, Idea, Ide
 import {
 	BOARD_IDEA_IMAGE_MAX_BYTES,
 	BOARD_IMAGE_CARD_HEIGHT,
+	BOARD_IMAGE_CARD_WIDTH,
 	getBoardIdeaUploadFileName,
 	getBoardIdeaUploadImage,
 	ideaHasImage,
@@ -41,6 +42,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 	const ideaType = ref<IdeaType>('technique');
 	const ideaDescription = ref('');
 	const ideaImageUrl = ref('');
+	const ideaReferenceUrl = ref('');
 	const ideaImageMode = ref<'url' | 'upload'>('url');
 	const ideaImagePreviewUrl = ref('');
 	const ideaImageFileName = ref('');
@@ -48,6 +50,8 @@ export function useBoardDetail(boardId: Ref<string>) {
 	const ideaNotes = ref('');
 	const ideaTagsInput = ref('');
 	const editingIdeaId = ref<string | null>(null);
+	const editingBoardItemId = ref<string | null>(null);
+	const isIdeaEditorModalOpen = ref(false);
 
 	const ideaSelectedImageFile = shallowRef<File | null>(null);
 	const ideaExistingUploadImage = ref<BoardIdeaUploadImage | null>(null);
@@ -108,6 +112,13 @@ export function useBoardDetail(boardId: Ref<string>) {
 	});
 
 	const boardReady = computed(() => Boolean(board.value));
+	const ideaEditorModalTitle = computed(() => {
+		if (editingIdeaId.value) {
+			return ideaTitle.value.trim() ? `Edit "${ideaTitle.value.trim()}"` : 'Edit idea';
+		}
+
+		return 'Edit idea';
+	});
 
 	const leftColumnClass = computed(() => {
 		if (isLibraryOpen.value) {
@@ -175,6 +186,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 		ideaType.value = 'technique';
 		ideaDescription.value = '';
 		ideaImageUrl.value = '';
+		ideaReferenceUrl.value = '';
 		ideaImageMode.value = 'url';
 		ideaImagePreviewUrl.value = '';
 		ideaImageFileName.value = '';
@@ -200,6 +212,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 		ideaType.value = idea.type;
 		ideaDescription.value = idea.description ?? '';
 		ideaImageUrl.value = idea.image_url ?? '';
+		ideaReferenceUrl.value = idea.reference_url ?? '';
 		ideaImageError.value = '';
 		ideaNotes.value = idea.notes ?? '';
 		ideaTagsInput.value = idea.tags.join(', ');
@@ -207,6 +220,23 @@ export function useBoardDetail(boardId: Ref<string>) {
 		ideaExistingUploadImage.value = getBoardIdeaUploadImage(idea.metadata);
 		ideaImageMode.value = ideaExistingUploadImage.value ? 'upload' : 'url';
 		void syncIdeaImagePreview();
+	};
+
+	const openIdeaEditorModalFromBoardItem = (item: BoardItemWithIdea) => {
+		if (!item.idea) {
+			return;
+		}
+
+		populateIdeaForm(item.idea);
+		editingBoardItemId.value = item.id;
+		isIdeaEditorModalOpen.value = true;
+		selectBoardItems([item.id]);
+	};
+
+	const closeIdeaEditorModal = () => {
+		isIdeaEditorModalOpen.value = false;
+		editingBoardItemId.value = null;
+		resetIdeaForm();
 	};
 
 	const handleIdeaImageFileSelected = (file: File | null) => {
@@ -344,6 +374,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 					type: ideaType.value,
 					description: ideaDescription.value,
 					image_url: nextImageUrl,
+					reference_url: ideaReferenceUrl.value,
 					metadata: nextMetadata,
 					notes: ideaNotes.value,
 					tags: parseBoardTags(ideaTagsInput.value),
@@ -359,6 +390,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 					type: ideaType.value,
 					description: ideaDescription.value,
 					image_url: nextImageUrl,
+					reference_url: ideaReferenceUrl.value,
 					metadata: nextMetadata,
 					notes: ideaNotes.value,
 					tags: parseBoardTags(ideaTagsInput.value),
@@ -377,7 +409,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 				}
 			}
 
-			resetIdeaForm();
+			closeIdeaEditorModal();
 		} catch (error) {
 			if (uploadedImageForRollback) {
 				try {
@@ -411,7 +443,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 			selectedItemIds.value = selectedItemIds.value.filter((id) => boardItems.value.some((item) => item.id === id));
 
 			if (editingIdeaId.value === idea.id) {
-				resetIdeaForm();
+				closeIdeaEditorModal();
 			}
 
 			if (existingUploadImage) {
@@ -426,6 +458,22 @@ export function useBoardDetail(boardId: Ref<string>) {
 		}
 	};
 
+	const handleDeleteEditingIdea = async () => {
+		if (!editingIdeaId.value) {
+			pageError.value = 'Select an idea before deleting it.';
+			return;
+		}
+
+		const currentIdea = ideas.value.find((idea) => idea.id === editingIdeaId.value);
+
+		if (!currentIdea) {
+			pageError.value = 'Unable to find that idea right now.';
+			return;
+		}
+
+		await handleDeleteIdea(currentIdea);
+	};
+
 	const handlePlaceIdea = async (idea: Idea) => {
 		pageError.value = '';
 
@@ -438,6 +486,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 			const offset = boardItems.value.length % 8;
 			const createdItem = await addIdeaToBoard(boardId.value, idea.id, {
 				height: ideaHasImage(idea) ? BOARD_IMAGE_CARD_HEIGHT : undefined,
+				width: ideaHasImage(idea) ? BOARD_IMAGE_CARD_WIDTH : undefined,
 				positionX: 80 + offset * 36,
 				positionY: 80 + offset * 28,
 				zIndex: nextZIndex.value,
@@ -603,9 +652,11 @@ export function useBoardDetail(boardId: Ref<string>) {
 		conceptNotes,
 		conceptTitle,
 		editingIdeaId,
+		editingBoardItemId,
 		filteredIdeas,
 		handleCreateConcept,
 		handleDeleteIdea,
+		handleDeleteEditingIdea,
 		handleDeleteSelection,
 		handleDuplicateConcept,
 		handleIdeaImageFileSelected,
@@ -618,20 +669,25 @@ export function useBoardDetail(boardId: Ref<string>) {
 		ideaImageMode,
 		ideaImagePreviewUrl,
 		ideaImageUrl,
+		ideaReferenceUrl,
 		ideaNotes,
 		ideaTagsInput,
 		ideaTitle,
 		ideaType,
 		isLibraryOpen,
+		isIdeaEditorModalOpen,
 		isRightRailOpen,
 		isSavingIdea,
+		ideaEditorModalTitle,
 		leftColumnClass,
 		libraryTagFilter,
 		libraryTypeFilter,
+		closeIdeaEditorModal,
 		loadBoardData,
 		loadingBoard,
 		mergeBoardItem,
 		nextZIndex,
+		openIdeaEditorModalFromBoardItem,
 		pageError,
 		populateIdeaForm,
 		removeIdeaImage,

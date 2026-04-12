@@ -17,12 +17,16 @@ create table if not exists public.ideas (
 	type text not null,
 	description text,
 	image_url text,
+	reference_url text,
 	notes text,
 	tags text[] not null default '{}',
 	metadata jsonb not null default '{}'::jsonb,
 	created_at timestamptz not null default now(),
 	updated_at timestamptz not null default now()
 );
+
+alter table public.ideas
+add column if not exists reference_url text;
 
 create table if not exists public.boards (
 	id uuid primary key default gen_random_uuid(),

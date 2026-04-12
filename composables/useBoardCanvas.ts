@@ -2,6 +2,7 @@ import { onBeforeUnmount, onMounted, ref, type ComputedRef, type Ref } from 'vue
 import type { BoardItemWithIdea } from '~/types/board';
 
 type DragState = {
+	hasMoved: boolean;
 	itemId: string;
 	pointerId: number;
 	startClientX: number;
@@ -36,6 +37,7 @@ export function useBoardCanvas({
 	setPageError,
 }: UseBoardCanvasOptions) {
 	const dragState = ref<DragState | null>(null);
+	const DRAG_START_THRESHOLD = 6;
 
 	const handleCanvasCardPointerDown = (event: PointerEvent, item: BoardItemWithIdea) => {
 		if (event.button !== 0) {
@@ -55,6 +57,7 @@ export function useBoardCanvas({
 		mergeBoardItem({ ...item, z_index: zIndex });
 
 		dragState.value = {
+			hasMoved: false,
 			itemId: item.id,
 			pointerId: event.pointerId,
 			startClientX: event.clientX,
@@ -80,6 +83,16 @@ export function useBoardCanvas({
 
 		const deltaX = event.clientX - dragState.value.startClientX;
 		const deltaY = event.clientY - dragState.value.startClientY;
+		const movedPastThreshold = Math.abs(deltaX) > DRAG_START_THRESHOLD || Math.abs(deltaY) > DRAG_START_THRESHOLD;
+
+		if (!dragState.value.hasMoved && !movedPastThreshold) {
+			return;
+		}
+
+		dragState.value = {
+			...dragState.value,
+			hasMoved: true,
+		};
 		const nextPositionX = Math.max(0, dragState.value.startPositionX + deltaX);
 		const nextPositionY = Math.max(0, dragState.value.startPositionY + deltaY);
 
@@ -98,6 +111,10 @@ export function useBoardCanvas({
 
 		const activeDrag = dragState.value;
 		dragState.value = null;
+
+		if (!activeDrag.hasMoved) {
+			return;
+		}
 
 		const finalItem = boardItems.value.find((item) => item.id === activeDrag.itemId);
 

@@ -18,9 +18,18 @@ export const CARD_BACKGROUND_OPTIONS = [
 	{ value: 'sky', label: 'Sky' },
 ] as const;
 
+export const BOARD_RELATION_KIND_OPTIONS = [
+	{ value: 'related', label: 'Related' },
+	{ value: 'builds_on', label: 'Builds On' },
+	{ value: 'inspired_by', label: 'Inspired By' },
+	{ value: 'contrast', label: 'Contrast' },
+] as const;
+
 export type BoardCardBackground = (typeof CARD_BACKGROUND_OPTIONS)[number]['value'];
+export type BoardRelationKind = (typeof BOARD_RELATION_KIND_OPTIONS)[number]['value'];
 
 export const DEFAULT_BOARD_CARD_BACKGROUND: BoardCardBackground = 'paper';
+export const DEFAULT_BOARD_RELATION_KIND: BoardRelationKind = 'related';
 
 export function parseBoardTags(value: string) {
 	return value
@@ -30,6 +39,10 @@ export function parseBoardTags(value: string) {
 }
 
 export function formatIdeaTypeLabel(value: string) {
+	return value.replace(/_/g, ' ');
+}
+
+export function formatBoardRelationKindLabel(value: string) {
 	return value.replace(/_/g, ' ');
 }
 

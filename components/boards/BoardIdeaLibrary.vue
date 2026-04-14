@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import BoardIdeaEditorForm from '~/components/boards/BoardIdeaEditorForm.vue';
 import BoardIdeaImage from '~/components/boards/BoardIdeaImage.vue';
-import type { Idea, IdeaType } from '~/types/board';
+import type { Idea, IdeaMediaSource, IdeaType } from '~/types/board';
 import { IDEA_TYPE_OPTIONS, formatIdeaTypeLabel } from '~/utils/board';
 
 defineProps<{
 	allTags: string[];
+	canRemoveImage: boolean;
 	editingIdeaId: string | null;
 	filteredIdeas: Idea[];
 	imageError: string;
 	imageFileName: string;
-	imagePreviewUrl: string;
 	isOpen: boolean;
 	isSavingIdea: boolean;
+	mediaPreviewIdea: IdeaMediaSource | null;
 }>();
 
 const emit = defineEmits<{
@@ -87,10 +88,11 @@ const libraryTagFilter = defineModel<string>('libraryTagFilter', { required: tru
 				v-model:idea-tags-input="ideaTagsInput"
 				:editing-idea-id="editingIdeaId"
 				id-prefix="idea-library"
+				:can-remove-image="canRemoveImage"
 				:image-error="imageError"
 				:image-file-name="imageFileName"
-				:image-preview-url="imagePreviewUrl"
 				:is-saving-idea="isSavingIdea"
+				:media-preview-idea="mediaPreviewIdea"
 				@remove-image="emit('remove-image')"
 				@save-idea="emit('save-idea')"
 				@select-image-file="emit('select-image-file', $event)"
@@ -162,7 +164,8 @@ const libraryTagFilter = defineModel<string>('libraryTagFilter', { required: tru
 					<BoardIdeaImage
 						:idea="idea"
 						:alt="idea.title"
-						image-class="mt-3 h-40 w-full rounded-2xl object-cover"
+						wrapper-class="mt-3 overflow-hidden rounded-2xl border border-green-900/10 bg-green-50/40 p-2"
+						image-class="h-[220px] w-full rounded-[1rem] object-cover"
 					/>
 
 					<p v-if="idea.description" class="mt-2 text-sm text-gray-600">

@@ -1,5 +1,17 @@
 import { computed, onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue';
-import type { Board, BoardItemWithIdea, BoardIdeaUploadImage, Concept, Idea, IdeaType } from '~/types/board';
+import type {
+	Board,
+	BoardItemWithIdea,
+	BoardIdeaUploadImage,
+	BoardIdeaVideoReference,
+	BoardRelation,
+	Concept,
+	Idea,
+	IdeaMediaSource,
+	IdeaType,
+} from '~/types/board';
+import { useBoardIdeaImages } from '~/composables/useBoardIdeaImages';
+import { useBoardIdeaVideos } from '~/composables/useBoardIdeaVideos';
 import {
 	BOARD_IDEA_IMAGE_MAX_BYTES,
 	BOARD_IMAGE_CARD_HEIGHT,
@@ -7,30 +19,45 @@ import {
 	getBoardIdeaUploadFileName,
 	getBoardIdeaUploadImage,
 	ideaHasImage,
-	useBoardIdeaImages,
+	ideaHasVisualMedia,
 	withBoardIdeaUploadImage,
-} from '~/composables/useBoardIdeaImages';
-import { DEFAULT_BOARD_CARD_BACKGROUND, type BoardCardBackground, parseBoardTags } from '~/utils/board';
+} from '~/utils/boardIdeaImages';
+import {
+	getBoardIdeaVideoReference,
+	parseBoardIdeaVideoReferenceUrl,
+	withBoardIdeaVideoReference,
+} from '~/utils/boardIdeaVideos';
+import {
+	DEFAULT_BOARD_CARD_BACKGROUND,
+	DEFAULT_BOARD_RELATION_KIND,
+	type BoardCardBackground,
+	parseBoardTags,
+} from '~/utils/board';
 
 export function useBoardDetail(boardId: Ref<string>) {
 	const { user } = useAuth();
 	const {
 		addIdeaToBoard,
+		createBoardRelation,
 		createConceptFromBoardItems,
 		createIdea,
 		deleteBoardItems,
+		deleteBoardRelation,
 		deleteIdea,
 		duplicateConcept,
 		loadBoardSnapshot,
 		removeBoardItemsFromConcept,
 		updateBoardItemPosition,
+		updateBoardRelation,
 		updateIdea,
 	} = useBoards();
-	const { deleteIdeaImageUpload, resolveIdeaImageUrl, uploadIdeaImage } = useBoardIdeaImages();
+	const { deleteIdeaImageUpload, importIdeaImageUrl, resolveIdeaImageUrl, uploadIdeaImage } = useBoardIdeaImages();
+	const { clearResolvedIdeaVideoReference, resolveIdeaVideoReference } = useBoardIdeaVideos();
 
 	const board = ref<Board | null>(null);
 	const ideas = ref<Idea[]>([]);
 	const boardItems = ref<BoardItemWithIdea[]>([]);
+	const boardRelations = ref<BoardRelation[]>([]);
 	const concepts = ref<Concept[]>([]);
 
 	const pageError = ref('');
@@ -47,6 +74,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 	const ideaImagePreviewUrl = ref('');
 	const ideaImageFileName = ref('');
 	const ideaImageError = ref('');
+	const ideaVideoPreview = ref<BoardIdeaVideoReference | null>(null);
 	const ideaNotes = ref('');
 	const ideaTagsInput = ref('');
 	const editingIdeaId = ref<string | null>(null);
@@ -56,15 +84,24 @@ export function useBoardDetail(boardId: Ref<string>) {
 	const ideaSelectedImageFile = shallowRef<File | null>(null);
 	const ideaExistingUploadImage = ref<BoardIdeaUploadImage | null>(null);
 	const ideaPreviewObjectUrl = ref<string | null>(null);
+	const ideaVideoPreviewRequestId = ref(0);
+	let ideaVideoPreviewTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const libraryTypeFilter = ref<'all' | IdeaType>('all');
 	const libraryTagFilter = ref('');
 	const conceptTitle = ref('');
 	const conceptNotes = ref('');
+	const relationLabel = ref('');
+	const relationKind = ref(DEFAULT_BOARD_RELATION_KIND);
 	const selectedItemIds = ref<string[]>([]);
+	const selectedRelationIds = ref<string[]>([]);
 	const selectedCardTone = ref<BoardCardBackground>(DEFAULT_BOARD_CARD_BACKGROUND);
 	const isLibraryOpen = ref(true);
 	const isRightRailOpen = ref(true);
+	const processedBoardUrlIdeaIds = new Set<string>();
+	const migratingBoardUrlIdeaIds = new Set<string>();
+	const processedBoardVideoIdeaIds = new Set<string>();
+	const syncingBoardVideoIdeaIds = new Set<string>();
 
 	const sortedBoardItems = computed(() =>
 		[...boardItems.value].sort((left, right) => left.z_index - right.z_index)
@@ -73,6 +110,14 @@ export function useBoardDetail(boardId: Ref<string>) {
 	const selectedBoardItems = computed(() =>
 		boardItems.value.filter((item) => selectedItemIds.value.includes(item.id))
 	);
+
+	const selectedBoardRelation = computed(() => {
+		if (selectedRelationIds.value.length !== 1) {
+			return null;
+		}
+
+		return boardRelations.value.find((relation) => relation.id === selectedRelationIds.value[0]) ?? null;
+	});
 
 	const selectedItemCount = computed(() => selectedItemIds.value.length);
 
@@ -89,6 +134,19 @@ export function useBoardDetail(boardId: Ref<string>) {
 	const visibleConcepts = computed(() =>
 		concepts.value.filter((concept) => (conceptItemCounts.value[concept.id] ?? 0) > 0)
 	);
+
+	const relationSummary = computed(() => {
+		const relation = selectedBoardRelation.value;
+
+		if (!relation) {
+			return '';
+		}
+
+		const sourceTitle = boardItems.value.find((item) => item.id === relation.source_board_item_id)?.idea?.title ?? 'Untitled card';
+		const targetTitle = boardItems.value.find((item) => item.id === relation.target_board_item_id)?.idea?.title ?? 'Untitled card';
+
+		return `${sourceTitle} -> ${targetTitle}`;
+	});
 
 	const allTags = computed(() => {
 		return [...new Set(ideas.value.flatMap((idea) => idea.tags))].sort((left, right) => left.localeCompare(right));
@@ -112,6 +170,41 @@ export function useBoardDetail(boardId: Ref<string>) {
 	});
 
 	const boardReady = computed(() => Boolean(board.value));
+	const canRemoveIdeaImage = computed(() => {
+		if (ideaImageMode.value === 'url') {
+			return Boolean(ideaImageUrl.value.trim());
+		}
+
+		return Boolean(ideaSelectedImageFile.value || ideaExistingUploadImage.value);
+	});
+
+	const ideaPreviewMedia = computed<IdeaMediaSource | null>(() => {
+		const referenceUrl = ideaReferenceUrl.value.trim() || null;
+		const previewImageUrl = ideaImageMode.value === 'url'
+			? ideaImagePreviewUrl.value.trim() || ideaImageUrl.value.trim() || null
+			: ideaSelectedImageFile.value
+				? ideaImagePreviewUrl.value.trim() || null
+				: null;
+		const previewUploadImage = ideaImageMode.value === 'upload' && !ideaSelectedImageFile.value
+			? ideaExistingUploadImage.value
+			: null;
+		const metadata = withBoardIdeaVideoReference(
+			withBoardIdeaUploadImage({}, previewUploadImage),
+			ideaVideoPreview.value
+		);
+
+		if (!previewImageUrl && !previewUploadImage && !referenceUrl && !ideaVideoPreview.value) {
+			return null;
+		}
+
+		return {
+			title: ideaTitle.value.trim() || 'Idea preview',
+			image_url: previewImageUrl,
+			reference_url: referenceUrl,
+			metadata,
+		};
+	});
+
 	const ideaEditorModalTitle = computed(() => {
 		if (editingIdeaId.value) {
 			return ideaTitle.value.trim() ? `Edit "${ideaTitle.value.trim()}"` : 'Edit idea';
@@ -138,6 +231,15 @@ export function useBoardDetail(boardId: Ref<string>) {
 		}
 
 		ideaPreviewObjectUrl.value = null;
+	};
+
+	const clearIdeaVideoPreviewTimer = () => {
+		if (!ideaVideoPreviewTimer) {
+			return;
+		}
+
+		clearTimeout(ideaVideoPreviewTimer);
+		ideaVideoPreviewTimer = null;
 	};
 
 	const syncIdeaImagePreview = async () => {
@@ -180,6 +282,51 @@ export function useBoardDetail(boardId: Ref<string>) {
 		}
 	};
 
+	const syncIdeaVideoPreview = async (referenceUrl: string) => {
+		const trimmedReferenceUrl = referenceUrl.trim();
+		const parsedReference = parseBoardIdeaVideoReferenceUrl(trimmedReferenceUrl);
+
+		ideaVideoPreviewRequestId.value += 1;
+		const activeRequestId = ideaVideoPreviewRequestId.value;
+
+		if (!parsedReference) {
+			ideaVideoPreview.value = null;
+			return;
+		}
+
+		try {
+			const resolvedVideoReference = await resolveIdeaVideoReference(trimmedReferenceUrl);
+
+			if (activeRequestId !== ideaVideoPreviewRequestId.value) {
+				return;
+			}
+
+			ideaVideoPreview.value = resolvedVideoReference;
+		} catch {
+			if (activeRequestId !== ideaVideoPreviewRequestId.value) {
+				return;
+			}
+
+			clearResolvedIdeaVideoReference(trimmedReferenceUrl);
+			ideaVideoPreview.value = null;
+		}
+	};
+
+	const queueIdeaVideoPreviewSync = () => {
+		clearIdeaVideoPreviewTimer();
+
+		const trimmedReferenceUrl = ideaReferenceUrl.value.trim();
+
+		if (!trimmedReferenceUrl || !parseBoardIdeaVideoReferenceUrl(trimmedReferenceUrl)) {
+			ideaVideoPreview.value = null;
+			return;
+		}
+
+		ideaVideoPreviewTimer = setTimeout(() => {
+			void syncIdeaVideoPreview(trimmedReferenceUrl);
+		}, 250);
+	};
+
 	const resetIdeaForm = () => {
 		editingIdeaId.value = null;
 		ideaTitle.value = '';
@@ -191,10 +338,12 @@ export function useBoardDetail(boardId: Ref<string>) {
 		ideaImagePreviewUrl.value = '';
 		ideaImageFileName.value = '';
 		ideaImageError.value = '';
+		ideaVideoPreview.value = null;
 		ideaNotes.value = '';
 		ideaTagsInput.value = '';
 		ideaSelectedImageFile.value = null;
 		ideaExistingUploadImage.value = null;
+		clearIdeaVideoPreviewTimer();
 		revokeIdeaPreviewObjectUrl();
 	};
 
@@ -216,10 +365,12 @@ export function useBoardDetail(boardId: Ref<string>) {
 		ideaImageError.value = '';
 		ideaNotes.value = idea.notes ?? '';
 		ideaTagsInput.value = idea.tags.join(', ');
+		ideaVideoPreview.value = getBoardIdeaVideoReference(idea.metadata);
 		ideaSelectedImageFile.value = null;
 		ideaExistingUploadImage.value = getBoardIdeaUploadImage(idea.metadata);
 		ideaImageMode.value = ideaExistingUploadImage.value ? 'upload' : 'url';
 		void syncIdeaImagePreview();
+		queueIdeaVideoPreviewSync();
 	};
 
 	const openIdeaEditorModalFromBoardItem = (item: BoardItemWithIdea) => {
@@ -245,6 +396,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 		if (!file) {
 			ideaSelectedImageFile.value = null;
 			void syncIdeaImagePreview();
+			queueIdeaVideoPreviewSync();
 			return;
 		}
 
@@ -260,6 +412,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 
 		ideaSelectedImageFile.value = file;
 		void syncIdeaImagePreview();
+		queueIdeaVideoPreviewSync();
 	};
 
 	const removeIdeaImage = () => {
@@ -268,6 +421,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 		if (ideaImageMode.value === 'url') {
 			ideaImageUrl.value = '';
 			ideaImagePreviewUrl.value = '';
+			queueIdeaVideoPreviewSync();
 			return;
 		}
 
@@ -276,10 +430,141 @@ export function useBoardDetail(boardId: Ref<string>) {
 		ideaImagePreviewUrl.value = '';
 		ideaImageFileName.value = '';
 		revokeIdeaPreviewObjectUrl();
+		queueIdeaVideoPreviewSync();
 	};
 
 	const setPageError = (message: string) => {
 		pageError.value = message;
+	};
+
+	const syncIdeaAcrossState = (nextIdea: Idea) => {
+		ideas.value = ideas.value.map((idea) => (idea.id === nextIdea.id ? nextIdea : idea));
+		boardItems.value = boardItems.value.map((item) =>
+			item.idea_id === nextIdea.id ? { ...item, idea: nextIdea } : item
+		);
+	};
+
+	const saveIdeaWithImportedImage = async (idea: Idea, boardImage: BoardIdeaUploadImage) => {
+		const updatedIdea = await updateIdea(idea.id, {
+			title: idea.title,
+			type: idea.type,
+			description: idea.description,
+			image_url: null,
+			reference_url: idea.reference_url,
+			metadata: withBoardIdeaUploadImage(idea.metadata, boardImage),
+			notes: idea.notes,
+			tags: idea.tags,
+		});
+
+		syncIdeaAcrossState(updatedIdea);
+		return updatedIdea;
+	};
+
+	const syncIdeaVideoReferenceAcrossState = (nextIdea: Idea) => {
+		syncIdeaAcrossState(nextIdea);
+		processedBoardVideoIdeaIds.add(nextIdea.id);
+	};
+
+	const autoSyncBoardIdeaVideoReferences = async () => {
+		for (const idea of ideas.value) {
+			const trimmedReferenceUrl = idea.reference_url?.trim();
+
+			if (!trimmedReferenceUrl || ideaHasImage(idea)) {
+				continue;
+			}
+
+			const parsedReference = parseBoardIdeaVideoReferenceUrl(trimmedReferenceUrl);
+
+			if (!parsedReference) {
+				continue;
+			}
+
+			const storedVideoReference = getBoardIdeaVideoReference(idea.metadata);
+
+			if (
+				storedVideoReference
+				&& storedVideoReference.provider === parsedReference.provider
+				&& storedVideoReference.videoId === parsedReference.videoId
+			) {
+				processedBoardVideoIdeaIds.add(idea.id);
+				continue;
+			}
+
+			if (processedBoardVideoIdeaIds.has(idea.id) || syncingBoardVideoIdeaIds.has(idea.id)) {
+				continue;
+			}
+
+			syncingBoardVideoIdeaIds.add(idea.id);
+
+			try {
+				const resolvedVideoReference = await resolveIdeaVideoReference(trimmedReferenceUrl);
+
+				if (!resolvedVideoReference) {
+					processedBoardVideoIdeaIds.add(idea.id);
+					continue;
+				}
+
+				const updatedIdea = await updateIdea(idea.id, {
+					title: idea.title,
+					type: idea.type,
+					description: idea.description,
+					image_url: idea.image_url,
+					reference_url: idea.reference_url,
+					metadata: withBoardIdeaVideoReference(idea.metadata, resolvedVideoReference),
+					notes: idea.notes,
+					tags: idea.tags,
+				});
+
+				syncIdeaVideoReferenceAcrossState(updatedIdea);
+			} catch {
+				processedBoardVideoIdeaIds.add(idea.id);
+			} finally {
+				syncingBoardVideoIdeaIds.delete(idea.id);
+			}
+		}
+	};
+
+	const autoMigrateBoardIdeaImages = async () => {
+		const uniqueIdeas = [...new Map(
+			boardItems.value
+				.map((item) => item.idea)
+				.filter((idea): idea is Idea => Boolean(idea))
+				.map((idea) => [idea.id, idea])
+		).values()];
+
+		for (const idea of uniqueIdeas) {
+			const directUrl = idea.image_url?.trim();
+
+			if (!directUrl || getBoardIdeaUploadImage(idea.metadata)) {
+				continue;
+			}
+
+			if (processedBoardUrlIdeaIds.has(idea.id) || migratingBoardUrlIdeaIds.has(idea.id)) {
+				continue;
+			}
+
+			migratingBoardUrlIdeaIds.add(idea.id);
+
+			try {
+				const boardImage = await importIdeaImageUrl(directUrl);
+				try {
+					await saveIdeaWithImportedImage(idea, boardImage);
+				} catch {
+					try {
+						await deleteIdeaImageUpload(boardImage);
+					} catch {
+						// Keep the current direct URL if cleanup fails.
+					}
+
+					throw new Error('Unable to migrate that idea image right now.');
+				}
+			} catch {
+				// Leave the direct URL in place if background migration fails.
+			} finally {
+				migratingBoardUrlIdeaIds.delete(idea.id);
+				processedBoardUrlIdeaIds.add(idea.id);
+			}
+		}
 	};
 
 	const mergeBoardItem = (nextItem: BoardItemWithIdea) => {
@@ -291,6 +576,19 @@ export function useBoardDetail(boardId: Ref<string>) {
 		}
 
 		boardItems.value = boardItems.value.map((item) => (item.id === nextItem.id ? nextItem : item));
+	};
+
+	const mergeBoardRelation = (nextRelation: BoardRelation) => {
+		const index = boardRelations.value.findIndex((relation) => relation.id === nextRelation.id);
+
+		if (index === -1) {
+			boardRelations.value = [...boardRelations.value, nextRelation];
+			return;
+		}
+
+		boardRelations.value = boardRelations.value.map((relation) =>
+			relation.id === nextRelation.id ? nextRelation : relation
+		);
 	};
 
 	const loadBoardData = async () => {
@@ -306,8 +604,14 @@ export function useBoardDetail(boardId: Ref<string>) {
 			board.value = snapshot.board;
 			ideas.value = snapshot.ideas;
 			boardItems.value = snapshot.boardItems;
+			boardRelations.value = snapshot.boardRelations;
 			concepts.value = snapshot.concepts;
 			selectedItemIds.value = selectedItemIds.value.filter((id) => snapshot.boardItems.some((item) => item.id === id));
+			selectedRelationIds.value = selectedRelationIds.value.filter((id) =>
+				snapshot.boardRelations.some((relation) => relation.id === id)
+			);
+			void autoMigrateBoardIdeaImages();
+			void autoSyncBoardIdeaVideoReferences();
 		} catch (error) {
 			pageError.value = error instanceof Error ? error.message : 'Unable to load this board right now.';
 		} finally {
@@ -339,13 +643,25 @@ export function useBoardDetail(boardId: Ref<string>) {
 		let nextImageUrl: string | null = null;
 		let nextMetadata = withBoardIdeaUploadImage(existingIdea?.metadata, previousUploadImage);
 		let nextUploadImage: BoardIdeaUploadImage | null = previousUploadImage;
+		let nextVideoReference: BoardIdeaVideoReference | null = null;
 
 		try {
 			if (ideaImageMode.value === 'url') {
-				nextImageUrl = ideaImageUrl.value.trim() || null;
-				nextMetadata = withBoardIdeaUploadImage(existingIdea?.metadata, null);
-				nextUploadImage = null;
-				uploadImageToDelete = previousUploadImage;
+				const directImageUrl = ideaImageUrl.value.trim();
+
+				if (directImageUrl) {
+					const importedImage = await importIdeaImageUrl(directImageUrl);
+					uploadedImageForRollback = importedImage;
+					nextImageUrl = null;
+					nextMetadata = withBoardIdeaUploadImage(existingIdea?.metadata, importedImage);
+					nextUploadImage = importedImage;
+					uploadImageToDelete = previousUploadImage;
+				} else {
+					nextImageUrl = null;
+					nextMetadata = withBoardIdeaUploadImage(existingIdea?.metadata, null);
+					nextUploadImage = null;
+					uploadImageToDelete = previousUploadImage;
+				}
 			} else if (ideaSelectedImageFile.value) {
 				if (!user.value?.id) {
 					throw new Error('You need to be logged in to upload idea images.');
@@ -368,6 +684,28 @@ export function useBoardDetail(boardId: Ref<string>) {
 				uploadImageToDelete = previousUploadImage;
 			}
 
+			const trimmedReferenceUrl = ideaReferenceUrl.value.trim();
+			const parsedVideoReference = parseBoardIdeaVideoReferenceUrl(trimmedReferenceUrl);
+
+			if (parsedVideoReference) {
+				if (
+					ideaVideoPreview.value
+					&& ideaVideoPreview.value.provider === parsedVideoReference.provider
+					&& ideaVideoPreview.value.videoId === parsedVideoReference.videoId
+				) {
+					nextVideoReference = ideaVideoPreview.value;
+				} else {
+					try {
+						nextVideoReference = await resolveIdeaVideoReference(trimmedReferenceUrl);
+					} catch {
+						clearResolvedIdeaVideoReference(trimmedReferenceUrl);
+						nextVideoReference = null;
+					}
+				}
+			}
+
+			nextMetadata = withBoardIdeaVideoReference(nextMetadata, nextVideoReference);
+
 			if (editingIdeaId.value) {
 				const updatedIdea = await updateIdea(editingIdeaId.value, {
 					title: ideaTitle.value,
@@ -380,10 +718,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 					tags: parseBoardTags(ideaTagsInput.value),
 				});
 
-				ideas.value = ideas.value.map((idea) => (idea.id === updatedIdea.id ? updatedIdea : idea));
-				boardItems.value = boardItems.value.map((item) =>
-					item.idea_id === updatedIdea.id ? { ...item, idea: updatedIdea } : item
-				);
+				syncIdeaAcrossState(updatedIdea);
 			} else {
 				const createdIdea = await createIdea({
 					title: ideaTitle.value,
@@ -438,9 +773,20 @@ export function useBoardDetail(boardId: Ref<string>) {
 
 		try {
 			await deleteIdea(idea.id);
+			const removedBoardItemIds = boardItems.value
+				.filter((item) => item.idea_id === idea.id)
+				.map((item) => item.id);
 			ideas.value = ideas.value.filter((entry) => entry.id !== idea.id);
 			boardItems.value = boardItems.value.filter((item) => item.idea_id !== idea.id);
+			boardRelations.value = boardRelations.value.filter(
+				(relation) =>
+					!removedBoardItemIds.includes(relation.source_board_item_id)
+					&& !removedBoardItemIds.includes(relation.target_board_item_id)
+			);
 			selectedItemIds.value = selectedItemIds.value.filter((id) => boardItems.value.some((item) => item.id === id));
+			selectedRelationIds.value = selectedRelationIds.value.filter((id) =>
+				boardRelations.value.some((relation) => relation.id === id)
+			);
 
 			if (editingIdeaId.value === idea.id) {
 				closeIdeaEditorModal();
@@ -474,6 +820,41 @@ export function useBoardDetail(boardId: Ref<string>) {
 		await handleDeleteIdea(currentIdea);
 	};
 
+	const handleRemoveEditingBoardItem = async () => {
+		if (!editingBoardItemId.value) {
+			pageError.value = 'Select a card before removing it from the board.';
+			return;
+		}
+
+		const currentBoardItem = boardItems.value.find((item) => item.id === editingBoardItemId.value);
+		const ideaTitle = currentBoardItem?.idea?.title || 'this idea';
+		const confirmed = window.confirm(`Remove "${ideaTitle}" from this board? The idea will stay in your library.`);
+
+		if (!confirmed) {
+			return;
+		}
+
+		pageError.value = '';
+
+		try {
+			const removedBoardItemId = editingBoardItemId.value;
+			await deleteBoardItems([removedBoardItemId]);
+			boardItems.value = boardItems.value.filter((item) => item.id !== removedBoardItemId);
+			boardRelations.value = boardRelations.value.filter(
+				(relation) =>
+					relation.source_board_item_id !== removedBoardItemId
+					&& relation.target_board_item_id !== removedBoardItemId
+			);
+			selectedItemIds.value = selectedItemIds.value.filter((id) => id !== removedBoardItemId);
+			selectedRelationIds.value = selectedRelationIds.value.filter((id) =>
+				boardRelations.value.some((relation) => relation.id === id)
+			);
+			closeIdeaEditorModal();
+		} catch (error) {
+			pageError.value = error instanceof Error ? error.message : 'Unable to remove that card from the board right now.';
+		}
+	};
+
 	const handlePlaceIdea = async (idea: Idea) => {
 		pageError.value = '';
 
@@ -485,8 +866,8 @@ export function useBoardDetail(boardId: Ref<string>) {
 		try {
 			const offset = boardItems.value.length % 8;
 			const createdItem = await addIdeaToBoard(boardId.value, idea.id, {
-				height: ideaHasImage(idea) ? BOARD_IMAGE_CARD_HEIGHT : undefined,
-				width: ideaHasImage(idea) ? BOARD_IMAGE_CARD_WIDTH : undefined,
+				height: ideaHasVisualMedia(idea) ? BOARD_IMAGE_CARD_HEIGHT : undefined,
+				width: ideaHasVisualMedia(idea) ? BOARD_IMAGE_CARD_WIDTH : undefined,
 				positionX: 80 + offset * 36,
 				positionY: 80 + offset * 28,
 				zIndex: nextZIndex.value,
@@ -494,6 +875,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 
 			boardItems.value = [...boardItems.value, createdItem];
 			selectedItemIds.value = [createdItem.id];
+			selectedRelationIds.value = [];
 			selectedCardTone.value = createdItem.style?.background ?? DEFAULT_BOARD_CARD_BACKGROUND;
 		} catch (error) {
 			pageError.value = error instanceof Error ? error.message : 'Unable to place that idea on the board right now.';
@@ -502,11 +884,40 @@ export function useBoardDetail(boardId: Ref<string>) {
 
 	const selectBoardItems = (ids: string[]) => {
 		selectedItemIds.value = ids;
+		selectedRelationIds.value = [];
 
 		if (ids.length) {
 			const firstItem = boardItems.value.find((item) => item.id === ids[0]);
 			selectedCardTone.value = firstItem?.style?.background ?? DEFAULT_BOARD_CARD_BACKGROUND;
 		}
+	};
+
+	const selectBoardRelations = (ids: string[]) => {
+		selectedRelationIds.value = ids;
+
+		if (ids.length) {
+			selectedItemIds.value = [];
+		}
+	};
+
+	const syncSelectedRelationDraft = (relation: BoardRelation | null) => {
+		relationLabel.value = relation?.label ?? '';
+		relationKind.value = relation?.kind ?? DEFAULT_BOARD_RELATION_KIND;
+	};
+
+	const beginRelationEditing = (relationId: string) => {
+		const relation = boardRelations.value.find((candidate) => candidate.id === relationId) ?? null;
+
+		if (!relation) {
+			return;
+		}
+
+		selectBoardRelations([relation.id]);
+		syncSelectedRelationDraft(relation);
+	};
+
+	const resetSelectedRelationDraft = () => {
+		syncSelectedRelationDraft(selectedBoardRelation.value);
 	};
 
 	const toggleSelection = (boardItemId: string, append: boolean) => {
@@ -616,29 +1027,221 @@ export function useBoardDetail(boardId: Ref<string>) {
 
 		try {
 			await deleteBoardItems(selectedItemIds.value);
+			const removedItemIds = [...selectedItemIds.value];
 			boardItems.value = boardItems.value.filter((item) => !selectedItemIds.value.includes(item.id));
+			boardRelations.value = boardRelations.value.filter(
+				(relation) =>
+					!removedItemIds.includes(relation.source_board_item_id)
+					&& !removedItemIds.includes(relation.target_board_item_id)
+			);
 			selectedItemIds.value = [];
+			selectedRelationIds.value = selectedRelationIds.value.filter((id) =>
+				boardRelations.value.some((relation) => relation.id === id)
+			);
 		} catch (error) {
 			pageError.value = error instanceof Error ? error.message : 'Unable to delete the selected cards right now.';
 		}
 	};
 
-	const saveBoardItemPosition = async (boardItemId: string, input: { positionX: number; positionY: number; zIndex?: number }) => {
+	const saveBoardItemPosition = async (
+		boardItemId: string,
+		input: { positionX: number; positionY: number; width?: number; height?: number; zIndex?: number }
+	) => {
 		return updateBoardItemPosition(boardItemId, input);
+	};
+
+	const handleCanvasSelectionChange = (payload: { itemIds: string[]; relationIds: string[] }) => {
+		if (payload.relationIds.length) {
+			selectBoardRelations(payload.relationIds);
+			return;
+		}
+
+		selectedRelationIds.value = [];
+		selectedItemIds.value = payload.itemIds;
+
+		if (payload.itemIds.length) {
+			const firstItem = boardItems.value.find((item) => item.id === payload.itemIds[0]);
+			selectedCardTone.value = firstItem?.style?.background ?? DEFAULT_BOARD_CARD_BACKGROUND;
+		}
+	};
+
+	const handleBoardItemsMoved = async (payload: Array<{ itemId: string; positionX: number; positionY: number }>) => {
+		pageError.value = '';
+
+		const uniquePayload = payload.filter(
+			(entry, index, allEntries) => allEntries.findIndex((candidate) => candidate.itemId === entry.itemId) === index
+		);
+
+		for (const entry of uniquePayload) {
+			const currentItem = boardItems.value.find((item) => item.id === entry.itemId);
+
+			if (!currentItem) {
+				continue;
+			}
+
+			mergeBoardItem({
+				...currentItem,
+				position_x: entry.positionX,
+				position_y: entry.positionY,
+			});
+		}
+
+		try {
+			const updatedItems = await Promise.all(
+				uniquePayload.map((entry) =>
+					saveBoardItemPosition(entry.itemId, {
+						positionX: entry.positionX,
+						positionY: entry.positionY,
+					})
+				)
+			);
+
+			updatedItems.forEach(mergeBoardItem);
+		} catch (error) {
+			pageError.value = error instanceof Error ? error.message : 'Unable to save those card positions right now.';
+			await loadBoardData();
+		}
+	};
+
+	const handleBoardItemResizeEnd = async (payload: { itemId: string; width: number; height: number }) => {
+		pageError.value = '';
+
+		const currentItem = boardItems.value.find((item) => item.id === payload.itemId);
+
+		if (!currentItem) {
+			return;
+		}
+
+		mergeBoardItem({
+			...currentItem,
+			width: payload.width,
+			height: payload.height,
+		});
+
+		try {
+			const updatedItem = await saveBoardItemPosition(payload.itemId, {
+				positionX: currentItem.position_x,
+				positionY: currentItem.position_y,
+				width: payload.width,
+				height: payload.height,
+			});
+
+			mergeBoardItem(updatedItem);
+		} catch (error) {
+			pageError.value = error instanceof Error ? error.message : 'Unable to save that card size right now.';
+			await loadBoardData();
+		}
+	};
+
+	const handleCreateRelationFromCanvas = async (input: { source: string | null; target: string | null }) => {
+		pageError.value = '';
+
+		if (!boardId.value) {
+			pageError.value = 'Unable to create a relation because this board is unavailable.';
+			return;
+		}
+
+		if (!input.source || !input.target) {
+			pageError.value = 'Choose both cards before creating a relation.';
+			return;
+		}
+
+		if (input.source === input.target) {
+			pageError.value = 'A card cannot link to itself.';
+			return;
+		}
+
+		const existingRelation = boardRelations.value.find(
+			(relation) =>
+				relation.source_board_item_id === input.source && relation.target_board_item_id === input.target
+		);
+
+		if (existingRelation) {
+			selectBoardRelations([existingRelation.id]);
+			return;
+		}
+
+		try {
+			const createdRelation = await createBoardRelation(boardId.value, {
+				source_board_item_id: input.source,
+				target_board_item_id: input.target,
+				kind: relationKind.value,
+				label: relationLabel.value,
+			});
+
+			mergeBoardRelation(createdRelation);
+			selectBoardRelations([createdRelation.id]);
+		} catch (error) {
+			pageError.value = error instanceof Error ? error.message : 'Unable to create that relation right now.';
+		}
+	};
+
+	const handleSaveSelectedRelation = async () => {
+		pageError.value = '';
+
+		if (!selectedBoardRelation.value) {
+			pageError.value = 'Select a relation before saving it.';
+			return;
+		}
+
+		try {
+			const updatedRelation = await updateBoardRelation(selectedBoardRelation.value.id, {
+				label: relationLabel.value,
+				kind: relationKind.value,
+				metadata: selectedBoardRelation.value.metadata,
+			});
+
+			mergeBoardRelation(updatedRelation);
+			selectBoardRelations([updatedRelation.id]);
+		} catch (error) {
+			pageError.value = error instanceof Error ? error.message : 'Unable to save that relation right now.';
+		}
+	};
+
+	const handleDeleteSelectedRelation = async () => {
+		pageError.value = '';
+
+		if (!selectedBoardRelation.value) {
+			return;
+		}
+
+		try {
+			await deleteBoardRelation(selectedBoardRelation.value.id);
+			boardRelations.value = boardRelations.value.filter((relation) => relation.id !== selectedBoardRelation.value?.id);
+			selectedRelationIds.value = [];
+		} catch (error) {
+			pageError.value = error instanceof Error ? error.message : 'Unable to delete that relation right now.';
+		}
 	};
 
 	watch(ideaImageMode, () => {
 		ideaImageError.value = '';
 		void syncIdeaImagePreview();
+		queueIdeaVideoPreviewSync();
 	});
 
 	watch(ideaImageUrl, () => {
 		if (ideaImageMode.value === 'url') {
 			ideaImagePreviewUrl.value = ideaImageUrl.value.trim();
 		}
+
+		queueIdeaVideoPreviewSync();
 	});
 
+	watch(ideaReferenceUrl, () => {
+		queueIdeaVideoPreviewSync();
+	});
+
+	watch(
+		selectedBoardRelation,
+		(relation) => {
+			syncSelectedRelationDraft(relation);
+		},
+		{ immediate: true }
+	);
+
 	onBeforeUnmount(() => {
+		clearIdeaVideoPreviewTimer();
 		revokeIdeaPreviewObjectUrl();
 	});
 
@@ -646,7 +1249,9 @@ export function useBoardDetail(boardId: Ref<string>) {
 		allTags,
 		board,
 		boardItems,
+		boardRelations,
 		boardReady,
+		beginRelationEditing,
 		conceptBusyId,
 		conceptItemCounts,
 		conceptNotes,
@@ -654,21 +1259,30 @@ export function useBoardDetail(boardId: Ref<string>) {
 		editingIdeaId,
 		editingBoardItemId,
 		filteredIdeas,
+		handleBoardItemResizeEnd,
+		handleBoardItemsMoved,
+		handleCanvasSelectionChange,
+		handleCreateRelationFromCanvas,
 		handleCreateConcept,
 		handleDeleteIdea,
 		handleDeleteEditingIdea,
+		handleRemoveEditingBoardItem,
 		handleDeleteSelection,
+		handleDeleteSelectedRelation,
 		handleDuplicateConcept,
 		handleIdeaImageFileSelected,
 		handlePlaceIdea,
 		handleSaveIdea,
+		handleSaveSelectedRelation,
 		handleUngroupSelection,
+		canRemoveIdeaImage,
 		ideaDescription,
 		ideaImageError,
 		ideaImageFileName,
 		ideaImageMode,
 		ideaImagePreviewUrl,
 		ideaImageUrl,
+		ideaPreviewMedia,
 		ideaReferenceUrl,
 		ideaNotes,
 		ideaTagsInput,
@@ -691,14 +1305,21 @@ export function useBoardDetail(boardId: Ref<string>) {
 		pageError,
 		populateIdeaForm,
 		removeIdeaImage,
+		relationKind,
+		relationLabel,
+		relationSummary,
+		resetSelectedRelationDraft,
 		resetIdeaForm,
 		saveBoardItemPosition,
 		selectBoardItems,
+		selectBoardRelations,
 		selectConcept,
 		selectedBoardItems,
 		selectedCardTone,
 		selectedItemCount,
 		selectedItemIds,
+		selectedBoardRelation,
+		selectedRelationIds,
 		selectionConceptId,
 		setPageError,
 		sortedBoardItems,

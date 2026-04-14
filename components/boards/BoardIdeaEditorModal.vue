@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue';
 import BoardIdeaEditorForm from '~/components/boards/BoardIdeaEditorForm.vue';
-import type { IdeaType } from '~/types/board';
+import type { IdeaMediaSource, IdeaType } from '~/types/board';
 
 const props = defineProps<{
+	canRemoveImage: boolean;
 	editingIdeaId: string | null;
 	imageError: string;
 	imageFileName: string;
-	imagePreviewUrl: string;
 	isOpen: boolean;
 	isSavingIdea: boolean;
+	mediaPreviewIdea: IdeaMediaSource | null;
 	modalTitle: string;
 }>();
 
 const emit = defineEmits<{
 	close: [];
-	'delete-current-idea': [];
+	'remove-current-board-item': [];
 	'remove-image': [];
 	'save-idea': [];
 	'select-image-file': [file: File | null];
@@ -66,7 +67,7 @@ onBeforeUnmount(() => {
 						{{ modalTitle }}
 					</h2>
 					<p class="mt-2 text-sm text-gray-600">
-						Changes here update the shared idea used by this card across the board.
+						Changes here update the shared idea, while removing this card only clears this placement from the board.
 					</p>
 				</div>
 
@@ -90,16 +91,17 @@ onBeforeUnmount(() => {
 					v-model:idea-notes="ideaNotes"
 					v-model:idea-tags-input="ideaTagsInput"
 					:editing-idea-id="editingIdeaId"
+					:can-remove-image="canRemoveImage"
 					id-prefix="idea-modal"
 					:image-error="imageError"
 					:image-file-name="imageFileName"
-					:image-preview-url="imagePreviewUrl"
 					:is-saving-idea="isSavingIdea"
-					:show-delete-button="true"
-					@delete-current-idea="emit('delete-current-idea')"
+					:media-preview-idea="mediaPreviewIdea"
+					secondary-action-label="Remove from board"
 					@remove-image="emit('remove-image')"
 					@save-idea="emit('save-idea')"
 					@select-image-file="emit('select-image-file', $event)"
+					@secondary-action="emit('remove-current-board-item')"
 				/>
 			</div>
 		</div>

@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import type { Concept } from '~/types/board';
 import BoardConceptList from '~/components/boards/BoardConceptList.vue';
-import { CARD_BACKGROUND_OPTIONS, type BoardCardBackground } from '~/utils/board';
+import {
+	BOARD_RELATION_KIND_OPTIONS,
+	CARD_BACKGROUND_OPTIONS,
+	type BoardCardBackground,
+} from '~/utils/board';
 
 defineProps<{
 	conceptBusyId: string | null;
 	conceptItemCounts: Record<string, number>;
 	isOpen: boolean;
+	relationSummary: string;
+	selectedRelationId: string | null;
 	selectedCardTone: BoardCardBackground;
 	selectedItemCount: number;
 	selectionConceptId: string | null;
@@ -17,6 +23,8 @@ const emit = defineEmits<{
 	'create-concept': [];
 	'delete-selection': [];
 	'duplicate-concept': [concept: Concept];
+	'delete-selected-relation': [];
+	'save-selected-relation': [];
 	'select-concept': [conceptId: string];
 	'toggle-open': [];
 	'ungroup-selection': [];
@@ -24,6 +32,8 @@ const emit = defineEmits<{
 
 const conceptTitle = defineModel<string>('conceptTitle', { required: true });
 const conceptNotes = defineModel<string>('conceptNotes', { required: true });
+const relationLabel = defineModel<string>('relationLabel', { required: true });
+const relationKind = defineModel<string>('relationKind', { required: true });
 </script>
 
 <template>
@@ -136,6 +146,74 @@ const conceptNotes = defineModel<string>('conceptNotes', { required: true });
 						@click="emit('delete-selection')"
 					>
 						Delete selected cards
+					</button>
+				</div>
+			</section>
+
+			<section class="rounded-3xl bg-white p-5 shadow-sm">
+				<p class="text-xs font-semibold uppercase tracking-[0.22em] text-green-700/70">
+					Relations
+				</p>
+				<h2 class="mt-2 text-2xl font-bold text-green-900">
+					Board links
+				</h2>
+				<p class="mt-2 text-sm text-gray-600">
+					<span v-if="selectedRelationId">
+						Editing the selected link: {{ relationSummary }}
+					</span>
+					<span v-else>
+						Drag from one card handle to another on the canvas to create a link, then select that link here to label it or remove it.
+					</span>
+				</p>
+
+				<div class="mt-5 space-y-3">
+					<div>
+						<label for="relation-kind" class="block text-sm font-medium text-gray-700">
+							Relation kind
+						</label>
+						<select
+							id="relation-kind"
+							v-model="relationKind"
+							:disabled="!selectedRelationId"
+							class="mt-1 w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/30 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+						>
+							<option v-for="option in BOARD_RELATION_KIND_OPTIONS" :key="option.value" :value="option.value">
+								{{ option.label }}
+							</option>
+						</select>
+					</div>
+
+					<div>
+						<label for="relation-label" class="block text-sm font-medium text-gray-700">
+							Label
+						</label>
+						<input
+							id="relation-label"
+							v-model="relationLabel"
+							type="text"
+							maxlength="120"
+							:disabled="!selectedRelationId"
+							class="mt-1 w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/30 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500"
+							placeholder="Optional edge label"
+						/>
+					</div>
+
+					<button
+						type="button"
+						class="w-full rounded-2xl bg-green-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
+						:disabled="!selectedRelationId"
+						@click="emit('save-selected-relation')"
+					>
+						Save selected relation
+					</button>
+
+					<button
+						type="button"
+						class="w-full rounded-2xl border border-red-300 px-4 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+						:disabled="!selectedRelationId"
+						@click="emit('delete-selected-relation')"
+					>
+						Delete selected relation
 					</button>
 				</div>
 			</section>

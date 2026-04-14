@@ -64,6 +64,20 @@ create table if not exists public.board_items (
 	updated_at timestamptz not null default now()
 );
 
+create table if not exists public.board_relations (
+	id uuid primary key default gen_random_uuid(),
+	owner_user_id uuid not null references auth.users (id) on delete cascade,
+	board_id uuid not null references public.boards (id) on delete cascade,
+	source_board_item_id uuid not null references public.board_items (id) on delete cascade,
+	target_board_item_id uuid not null references public.board_items (id) on delete cascade,
+	label text,
+	kind text not null default 'related',
+	metadata jsonb not null default '{}'::jsonb,
+	created_at timestamptz not null default now(),
+	updated_at timestamptz not null default now(),
+	check (source_board_item_id <> target_board_item_id)
+);
+
 create index if not exists ideas_owner_user_id_idx on public.ideas (owner_user_id);
 create index if not exists boards_owner_user_id_idx on public.boards (owner_user_id);
 create index if not exists concepts_board_id_idx on public.concepts (board_id);
@@ -71,6 +85,12 @@ create index if not exists concepts_owner_user_id_idx on public.concepts (owner_
 create index if not exists board_items_board_id_idx on public.board_items (board_id);
 create index if not exists board_items_concept_id_idx on public.board_items (concept_id);
 create index if not exists board_items_owner_user_id_idx on public.board_items (owner_user_id);
+create index if not exists board_relations_board_id_idx on public.board_relations (board_id);
+create index if not exists board_relations_source_board_item_id_idx on public.board_relations (source_board_item_id);
+create index if not exists board_relations_target_board_item_id_idx on public.board_relations (target_board_item_id);
+create index if not exists board_relations_owner_user_id_idx on public.board_relations (owner_user_id);
+create unique index if not exists board_relations_source_target_idx
+on public.board_relations (board_id, source_board_item_id, target_board_item_id);
 
 drop trigger if exists set_ideas_updated_at on public.ideas;
 create trigger set_ideas_updated_at
@@ -90,10 +110,17 @@ before update on public.board_items
 for each row
 execute function public.set_updated_at();
 
+drop trigger if exists set_board_relations_updated_at on public.board_relations;
+create trigger set_board_relations_updated_at
+before update on public.board_relations
+for each row
+execute function public.set_updated_at();
+
 alter table public.ideas enable row level security;
 alter table public.boards enable row level security;
 alter table public.concepts enable row level security;
 alter table public.board_items enable row level security;
+alter table public.board_relations enable row level security;
 
 drop policy if exists "Ideas are private to owners" on public.ideas;
 create policy "Ideas are private to owners"
@@ -122,6 +149,14 @@ with check (owner_user_id = auth.uid());
 drop policy if exists "Board items are private to owners" on public.board_items;
 create policy "Board items are private to owners"
 on public.board_items
+for all
+to authenticated
+using (owner_user_id = auth.uid())
+with check (owner_user_id = auth.uid());
+
+drop policy if exists "Board relations are private to owners" on public.board_relations;
+create policy "Board relations are private to owners"
+on public.board_relations
 for all
 to authenticated
 using (owner_user_id = auth.uid())

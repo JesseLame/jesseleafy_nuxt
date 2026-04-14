@@ -4,6 +4,8 @@ import type {
 	BoardInput,
 	BoardItemStyle,
 	BoardItemWithIdea,
+	BoardRelation,
+	BoardRelationInput,
 	BoardSnapshot,
 	Concept,
 	Idea,
@@ -18,6 +20,8 @@ const DEFAULT_CARD_STYLE: BoardItemStyle = {
 	background: 'paper',
 	borderAccent: 'green',
 };
+
+const DEFAULT_RELATION_KIND = 'related';
 
 export function useBoards() {
 	const { user } = useAuth();
@@ -60,6 +64,13 @@ export function useBoards() {
 			idea: relatedIdea ? normalizeIdea(relatedIdea) : null,
 		};
 	};
+
+	const normalizeBoardRelation = (relation: BoardRelation): BoardRelation => ({
+		...relation,
+		label: relation.label?.trim() || null,
+		kind: relation.kind?.trim() || DEFAULT_RELATION_KIND,
+		metadata: relation.metadata ?? {},
+	});
 
 	const listBoards = async (): Promise<Board[]> => {
 		const client = requireSupabase();
@@ -258,18 +269,30 @@ export function useBoards() {
 
 	const updateBoardItemPosition = async (
 		boardItemId: string,
-		input: { positionX: number; positionY: number; zIndex?: number }
+		input: { positionX: number; positionY: number; width?: number; height?: number; zIndex?: number }
 	): Promise<BoardItemWithIdea> => {
 		const client = requireSupabase();
+		const updateInput: Record<string, number | string> = {
+			position_x: input.positionX,
+			position_y: input.positionY,
+			updated_at: new Date().toISOString(),
+		};
+
+		if (typeof input.width === 'number') {
+			updateInput.width = input.width;
+		}
+
+		if (typeof input.height === 'number') {
+			updateInput.height = input.height;
+		}
+
+		if (typeof input.zIndex === 'number') {
+			updateInput.z_index = input.zIndex;
+		}
 
 		const { data, error } = await client
 			.from('board_items')
-			.update({
-				position_x: input.positionX,
-				position_y: input.positionY,
-				z_index: input.zIndex,
-				updated_at: new Date().toISOString(),
-			})
+			.update(updateInput)
 			.eq('id', boardItemId)
 			.select('*, idea:ideas(*)')
 			.single();
@@ -279,6 +302,84 @@ export function useBoards() {
 		}
 
 		return normalizeBoardItem(data as RawBoardItemRecord);
+	};
+
+	const listBoardRelations = async (boardId: string): Promise<BoardRelation[]> => {
+		const client = requireSupabase();
+
+		const { data, error } = await client
+			.from('board_relations')
+			.select('*')
+			.eq('board_id', boardId)
+			.order('created_at', { ascending: true });
+
+		if (error) {
+			throw error;
+		}
+
+		return ((data ?? []) as BoardRelation[]).map(normalizeBoardRelation);
+	};
+
+	const createBoardRelation = async (boardId: string, input: BoardRelationInput): Promise<BoardRelation> => {
+		const client = requireSupabase();
+		const currentUser = requireUser();
+
+		const { data, error } = await client
+			.from('board_relations')
+			.insert([
+				{
+					owner_user_id: currentUser.id,
+					board_id: boardId,
+					source_board_item_id: input.source_board_item_id,
+					target_board_item_id: input.target_board_item_id,
+					label: input.label?.trim() || null,
+					kind: input.kind?.trim() || DEFAULT_RELATION_KIND,
+					metadata: input.metadata ?? {},
+				},
+			])
+			.select('*')
+			.single();
+
+		if (error) {
+			throw error;
+		}
+
+		return normalizeBoardRelation(data as BoardRelation);
+	};
+
+	const updateBoardRelation = async (relationId: string, input: Pick<BoardRelationInput, 'label' | 'kind' | 'metadata'>): Promise<BoardRelation> => {
+		const client = requireSupabase();
+
+		const { data, error } = await client
+			.from('board_relations')
+			.update({
+				label: input.label?.trim() || null,
+				kind: input.kind?.trim() || DEFAULT_RELATION_KIND,
+				metadata: input.metadata ?? {},
+				updated_at: new Date().toISOString(),
+			})
+			.eq('id', relationId)
+			.select('*')
+			.single();
+
+		if (error) {
+			throw error;
+		}
+
+		return normalizeBoardRelation(data as BoardRelation);
+	};
+
+	const deleteBoardRelation = async (relationId: string) => {
+		const client = requireSupabase();
+
+		const { error } = await client
+			.from('board_relations')
+			.delete()
+			.eq('id', relationId);
+
+		if (error) {
+			throw error;
+		}
 	};
 
 	const deleteBoardItems = async (boardItemIds: string[]) => {
@@ -462,10 +563,11 @@ export function useBoards() {
 	};
 
 	const loadBoardSnapshot = async (boardId: string): Promise<BoardSnapshot> => {
-		const [board, ideas, boardItems, concepts] = await Promise.all([
+		const [board, ideas, boardItems, boardRelations, concepts] = await Promise.all([
 			getBoard(boardId),
 			listIdeas(),
 			listBoardItems(boardId),
+			listBoardRelations(boardId),
 			listConcepts(boardId),
 		]);
 
@@ -473,6 +575,7 @@ export function useBoards() {
 			board,
 			ideas,
 			boardItems,
+			boardRelations,
 			concepts,
 		};
 	};
@@ -488,6 +591,10 @@ export function useBoards() {
 		listBoardItems,
 		addIdeaToBoard,
 		updateBoardItemPosition,
+		listBoardRelations,
+		createBoardRelation,
+		updateBoardRelation,
+		deleteBoardRelation,
 		deleteBoardItems,
 		removeBoardItemsFromConcept,
 		listConcepts,

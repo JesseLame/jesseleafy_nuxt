@@ -13,21 +13,36 @@ export interface BoardIdeaUploadImage {
 	path: string;
 }
 
-export interface IdeaMetadata extends Record<string, unknown> {
-	boardImage?: BoardIdeaUploadImage | null;
+export type BoardIdeaVideoProvider = 'youtube' | 'vimeo';
+
+export interface BoardIdeaVideoReference {
+	provider: BoardIdeaVideoProvider;
+	videoId: string;
+	embedUrl: string;
+	thumbnailUrl: string;
+	title?: string;
+	aspectRatio?: number;
 }
 
-export interface Idea {
-	id: string;
-	owner_user_id: string;
+export interface IdeaMetadata extends Record<string, unknown> {
+	boardImage?: BoardIdeaUploadImage | null;
+	videoReference?: BoardIdeaVideoReference | null;
+}
+
+export interface IdeaMediaSource {
 	title: string;
-	type: IdeaType;
-	description: string | null;
 	image_url: string | null;
 	reference_url: string | null;
+	metadata: IdeaMetadata;
+}
+
+export interface Idea extends IdeaMediaSource {
+	id: string;
+	owner_user_id: string;
+	type: IdeaType;
+	description: string | null;
 	notes: string | null;
 	tags: string[];
-	metadata: IdeaMetadata;
 	created_at: string;
 	updated_at: string;
 }
@@ -37,6 +52,21 @@ export interface Board {
 	owner_user_id: string;
 	title: string;
 	description: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface BoardRelationMetadata extends Record<string, unknown> {}
+
+export interface BoardRelation {
+	id: string;
+	owner_user_id: string;
+	board_id: string;
+	source_board_item_id: string;
+	target_board_item_id: string;
+	label: string | null;
+	kind: string;
+	metadata: BoardRelationMetadata;
 	created_at: string;
 	updated_at: string;
 }
@@ -81,6 +111,7 @@ export interface BoardSnapshot {
 	board: Board | null;
 	ideas: Idea[];
 	boardItems: BoardItemWithIdea[];
+	boardRelations: BoardRelation[];
 	concepts: Concept[];
 }
 
@@ -98,4 +129,12 @@ export interface IdeaInput {
 export interface BoardInput {
 	title: string;
 	description?: string | null;
+}
+
+export interface BoardRelationInput {
+	source_board_item_id: string;
+	target_board_item_id: string;
+	label?: string | null;
+	kind?: string;
+	metadata?: BoardRelationMetadata;
 }

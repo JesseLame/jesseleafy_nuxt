@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import type { Connection } from '@vue-flow/core';
 import BoardCanvas from '~/components/boards/BoardCanvas.vue';
 import BoardIdeaEditorModal from '~/components/boards/BoardIdeaEditorModal.vue';
 import BoardHeader from '~/components/boards/BoardHeader.vue';
 import BoardIdeaLibrary from '~/components/boards/BoardIdeaLibrary.vue';
+import BoardRelationPopover from '~/components/boards/BoardRelationPopover.vue';
 import BoardToolsPanel from '~/components/boards/BoardToolsPanel.vue';
 
 const route = useRoute();
@@ -18,7 +20,10 @@ const {
 	allTags,
 	board,
 	boardItems,
+	boardRelations,
 	boardReady,
+	canRemoveIdeaImage,
+	beginRelationEditing,
 	conceptBusyId,
 	conceptItemCounts,
 	conceptNotes,
@@ -27,14 +32,20 @@ const {
 	editingIdeaId,
 	editingBoardItemId,
 	filteredIdeas,
+	handleBoardItemResizeEnd,
+	handleBoardItemsMoved,
+	handleCanvasSelectionChange,
+	handleCreateRelationFromCanvas,
 	handleCreateConcept,
 	handleDeleteIdea,
-	handleDeleteEditingIdea,
+	handleRemoveEditingBoardItem,
 	handleDeleteSelection,
+	handleDeleteSelectedRelation,
 	handleDuplicateConcept,
 	handleIdeaImageFileSelected,
 	handlePlaceIdea,
 	handleSaveIdea,
+	handleSaveSelectedRelation,
 	handleUngroupSelection,
 	ideaDescription,
 	ideaEditorModalTitle,
@@ -43,6 +54,7 @@ const {
 	ideaImageMode,
 	ideaImagePreviewUrl,
 	ideaImageUrl,
+	ideaPreviewMedia,
 	ideaReferenceUrl,
 	ideaNotes,
 	ideaTagsInput,
@@ -57,38 +69,68 @@ const {
 	libraryTypeFilter,
 	loadBoardData,
 	loadingBoard,
-	mergeBoardItem,
-	nextZIndex,
 	openIdeaEditorModalFromBoardItem,
 	pageError,
 	populateIdeaForm,
 	removeIdeaImage,
+	relationKind,
+	relationLabel,
+	relationSummary,
+	resetSelectedRelationDraft,
 	resetIdeaForm,
-	saveBoardItemPosition,
-	selectBoardItems,
+	selectedBoardRelation,
 	selectConcept,
 	selectedCardTone,
 	selectedItemCount,
 	selectedItemIds,
+	selectedRelationIds,
 	selectionConceptId,
-	setPageError,
-	sortedBoardItems,
 	toggleLibrary,
 	toggleRightRail,
-	toggleSelection,
 	visibleConcepts,
 } = useBoardDetail(boardId);
 
-const { handleCanvasCardPointerDown } = useBoardCanvas({
-	boardItems,
-	selectedItemIds,
-	nextZIndex,
-	mergeBoardItem,
-	selectBoardItems,
-	toggleSelection,
-	saveBoardItemPosition,
-	setPageError,
-});
+const relationPopoverAnchor = ref<{ x: number; y: number } | null>(null);
+
+const handleRelationConnect = async (connection: Connection) => {
+	await handleCreateRelationFromCanvas({
+		source: connection.source,
+		target: connection.target,
+	});
+};
+
+const hideRelationPopover = () => {
+	relationPopoverAnchor.value = null;
+};
+
+const closeRelationPopover = () => {
+	resetSelectedRelationDraft();
+	hideRelationPopover();
+};
+
+const handleRelationEditRequested = (payload: { anchorX: number; anchorY: number; relationId: string }) => {
+	beginRelationEditing(payload.relationId);
+	relationPopoverAnchor.value = {
+		x: payload.anchorX,
+		y: payload.anchorY,
+	};
+};
+
+const handleSaveSelectedRelationFromPopover = async () => {
+	await handleSaveSelectedRelation();
+
+	if (!pageError.value) {
+		hideRelationPopover();
+	}
+};
+
+const handleDeleteSelectedRelationFromPopover = async () => {
+	await handleDeleteSelectedRelation();
+
+	if (!pageError.value) {
+		hideRelationPopover();
+	}
+};
 
 useSeoMeta({
 	title: () => (board.value ? `${board.value.title} - Boards - Jesse's Leafy Feasts` : 'Board - Jesse\'s Leafy Feasts'),
@@ -112,6 +154,12 @@ watch(
 	},
 	{ immediate: true }
 );
+
+watch(selectedBoardRelation, (relation) => {
+	if (!relation) {
+		hideRelationPopover();
+	}
+});
 </script>
 
 <template>
@@ -152,13 +200,14 @@ watch(
 					v-model:library-type-filter="libraryTypeFilter"
 					v-model:library-tag-filter="libraryTagFilter"
 					:all-tags="allTags"
+					:can-remove-image="canRemoveIdeaImage"
 					:editing-idea-id="editingIdeaId"
 					:filtered-ideas="filteredIdeas"
 					:image-error="ideaImageError"
 					:image-file-name="ideaImageFileName"
-					:image-preview-url="ideaImagePreviewUrl"
 					:is-open="isLibraryOpen"
 					:is-saving-idea="isSavingIdea"
+					:media-preview-idea="ideaPreviewMedia"
 					@delete-idea="handleDeleteIdea"
 					@edit-idea="populateIdeaForm"
 					@place-idea="handlePlaceIdea"
@@ -172,16 +221,22 @@ watch(
 				<BoardToolsPanel
 					v-model:concept-title="conceptTitle"
 					v-model:concept-notes="conceptNotes"
+					v-model:relation-kind="relationKind"
+					v-model:relation-label="relationLabel"
 					:concept-busy-id="conceptBusyId"
 					:concept-item-counts="conceptItemCounts"
 					:is-open="isRightRailOpen"
+					:relation-summary="relationSummary"
+					:selected-relation-id="selectedBoardRelation?.id ?? null"
 					:selected-card-tone="selectedCardTone"
 					:selected-item-count="selectedItemCount"
 					:selection-concept-id="selectionConceptId"
 					:visible-concepts="visibleConcepts"
 					@create-concept="handleCreateConcept"
 					@delete-selection="handleDeleteSelection"
+					@delete-selected-relation="handleDeleteSelectedRelation"
 					@duplicate-concept="handleDuplicateConcept"
+					@save-selected-relation="handleSaveSelectedRelation"
 					@select-concept="selectConcept"
 					@toggle-open="toggleRightRail"
 					@ungroup-selection="handleUngroupSelection"
@@ -189,10 +244,16 @@ watch(
 			</div>
 
 			<BoardCanvas
-				:board-items="sortedBoardItems"
+				:board-items="boardItems"
+				:board-relations="boardRelations"
 				:selected-item-ids="selectedItemIds"
+				:selected-relation-ids="selectedRelationIds"
+				@board-item-resized="handleBoardItemResizeEnd"
+				@board-items-moved="handleBoardItemsMoved"
 				@card-edit-requested="openIdeaEditorModalFromBoardItem"
-				@card-pointerdown="handleCanvasCardPointerDown"
+				@relation-edit-requested="handleRelationEditRequested"
+				@relation-connected="handleRelationConnect"
+				@selection-change="handleCanvasSelectionChange"
 			/>
 		</div>
 
@@ -206,18 +267,32 @@ watch(
 			v-model:idea-reference-url="ideaReferenceUrl"
 			v-model:idea-notes="ideaNotes"
 			v-model:idea-tags-input="ideaTagsInput"
+			:can-remove-image="canRemoveIdeaImage"
 			:editing-idea-id="editingIdeaId"
 			:image-error="ideaImageError"
 			:image-file-name="ideaImageFileName"
-			:image-preview-url="ideaImagePreviewUrl"
 			:is-open="isIdeaEditorModalOpen"
 			:is-saving-idea="isSavingIdea"
+			:media-preview-idea="ideaPreviewMedia"
 			:modal-title="ideaEditorModalTitle"
 			@close="closeIdeaEditorModal"
-			@delete-current-idea="handleDeleteEditingIdea"
+			@remove-current-board-item="handleRemoveEditingBoardItem"
 			@remove-image="removeIdeaImage"
 			@save-idea="handleSaveIdea"
 			@select-image-file="handleIdeaImageFileSelected"
+		/>
+
+		<BoardRelationPopover
+			v-model:relation-kind="relationKind"
+			v-model:relation-label="relationLabel"
+			:anchor-x="relationPopoverAnchor?.x ?? 0"
+			:anchor-y="relationPopoverAnchor?.y ?? 0"
+			:is-open="Boolean(relationPopoverAnchor && selectedBoardRelation)"
+			:relation-summary="relationSummary"
+			:selected-relation-id="selectedBoardRelation?.id ?? null"
+			@close="closeRelationPopover"
+			@delete-selected-relation="handleDeleteSelectedRelationFromPopover"
+			@save-selected-relation="handleSaveSelectedRelationFromPopover"
 		/>
 	</div>
 </template>

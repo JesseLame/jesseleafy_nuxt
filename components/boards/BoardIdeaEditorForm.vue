@@ -1,26 +1,28 @@
 <script setup lang="ts">
-import { BOARD_IDEA_IMAGE_MAX_BYTES } from '~/composables/useBoardIdeaImages';
-import type { IdeaType } from '~/types/board';
+import BoardIdeaImage from '~/components/boards/BoardIdeaImage.vue';
+import { BOARD_IDEA_IMAGE_MAX_BYTES } from '~/utils/boardIdeaImages';
+import type { IdeaMediaSource, IdeaType } from '~/types/board';
 import { IDEA_TYPE_OPTIONS } from '~/utils/board';
 
 withDefaults(defineProps<{
+	canRemoveImage: boolean;
 	editingIdeaId: string | null;
 	idPrefix?: string;
 	imageError: string;
 	imageFileName: string;
-	imagePreviewUrl: string;
 	isSavingIdea: boolean;
-	showDeleteButton?: boolean;
+	mediaPreviewIdea: IdeaMediaSource | null;
+	secondaryActionLabel?: string | null;
 }>(), {
 	idPrefix: 'idea',
-	showDeleteButton: false,
+	secondaryActionLabel: null,
 });
 
 const emit = defineEmits<{
-	'delete-current-idea': [];
 	'remove-image': [];
 	'save-idea': [];
 	'select-image-file': [file: File | null];
+	'secondary-action': [];
 }>();
 
 const ideaTitle = defineModel<string>('ideaTitle', { required: true });
@@ -166,14 +168,17 @@ const handleFileChange = (event: Event) => {
 				</p>
 			</div>
 
-			<div v-if="imagePreviewUrl" class="mt-3 overflow-hidden rounded-2xl border border-green-900/10 bg-green-50/40 p-3">
-				<img
-					:src="imagePreviewUrl"
-					alt="Idea image preview"
-					class="h-40 w-full rounded-2xl object-cover"
-				>
+			<div v-if="mediaPreviewIdea" class="mt-3">
+				<BoardIdeaImage
+					:idea="mediaPreviewIdea"
+					:alt="mediaPreviewIdea.title"
+					mode="editor"
+					:allow-live-preview="false"
+					wrapper-class="overflow-hidden rounded-2xl border border-green-900/10 bg-green-50/40 p-3"
+					image-class="h-[220px] w-full rounded-[1.2rem] object-cover"
+				/>
 
-				<div class="mt-3 flex justify-end">
+				<div v-if="canRemoveImage" class="mt-3 flex justify-end">
 					<button
 						type="button"
 						class="rounded-full border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50"
@@ -212,12 +217,12 @@ const handleFileChange = (event: Event) => {
 			</button>
 
 			<button
-				v-if="showDeleteButton && editingIdeaId"
+				v-if="secondaryActionLabel && editingIdeaId"
 				type="button"
 				class="rounded-2xl border border-red-300 px-4 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-50"
-				@click="emit('delete-current-idea')"
+				@click="emit('secondary-action')"
 			>
-				Delete idea
+				{{ secondaryActionLabel }}
 			</button>
 		</div>
 	</form>

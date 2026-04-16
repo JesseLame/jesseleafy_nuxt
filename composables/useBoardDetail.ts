@@ -31,8 +31,11 @@ import {
 	DEFAULT_BOARD_CARD_BACKGROUND,
 	DEFAULT_BOARD_RELATION_KIND,
 	type BoardCardBackground,
+	isPromotedConceptIdea,
 	parseBoardTags,
 } from '~/utils/board';
+
+type BoardWorkspaceSection = 'library' | 'selection' | 'links' | 'concepts';
 
 export function useBoardDetail(boardId: Ref<string>) {
 	const { user } = useAuth();
@@ -41,6 +44,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 		createBoardRelation,
 		createConceptFromBoardItems,
 		createIdea,
+		deleteBoardRelations,
 		deleteBoardItems,
 		deleteBoardRelation,
 		deleteIdea,
@@ -96,8 +100,8 @@ export function useBoardDetail(boardId: Ref<string>) {
 	const selectedItemIds = ref<string[]>([]);
 	const selectedRelationIds = ref<string[]>([]);
 	const selectedCardTone = ref<BoardCardBackground>(DEFAULT_BOARD_CARD_BACKGROUND);
-	const isLibraryOpen = ref(true);
-	const isRightRailOpen = ref(true);
+	const isWorkspaceOpen = ref(true);
+	const activeWorkspaceSection = ref<BoardWorkspaceSection>('library');
 	const processedBoardUrlIdeaIds = new Set<string>();
 	const migratingBoardUrlIdeaIds = new Set<string>();
 	const processedBoardVideoIdeaIds = new Set<string>();
@@ -123,7 +127,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 
 	const conceptItemCounts = computed(() => {
 		return boardItems.value.reduce<Record<string, number>>((counts, item) => {
-			if (item.concept_id) {
+			if (item.concept_id && !isPromotedConceptIdea(item.idea)) {
 				counts[item.concept_id] = (counts[item.concept_id] ?? 0) + 1;
 			}
 
@@ -211,18 +215,6 @@ export function useBoardDetail(boardId: Ref<string>) {
 		}
 
 		return 'Edit idea';
-	});
-
-	const leftColumnClass = computed(() => {
-		if (isLibraryOpen.value) {
-			return 'lg:w-[22rem] lg:min-w-[22rem]';
-		}
-
-		if (isRightRailOpen.value) {
-			return 'lg:w-[20rem] lg:min-w-[20rem]';
-		}
-
-		return 'lg:w-20 lg:min-w-20';
 	});
 
 	const revokeIdeaPreviewObjectUrl = () => {
@@ -347,12 +339,16 @@ export function useBoardDetail(boardId: Ref<string>) {
 		revokeIdeaPreviewObjectUrl();
 	};
 
-	const toggleLibrary = () => {
-		isLibraryOpen.value = !isLibraryOpen.value;
+	const setActiveWorkspaceSection = (section: BoardWorkspaceSection) => {
+		activeWorkspaceSection.value = section;
 	};
 
-	const toggleRightRail = () => {
-		isRightRailOpen.value = !isRightRailOpen.value;
+	const openWorkspace = () => {
+		isWorkspaceOpen.value = true;
+	};
+
+	const toggleWorkspace = () => {
+		isWorkspaceOpen.value = !isWorkspaceOpen.value;
 	};
 
 	const populateIdeaForm = (idea: Idea) => {
@@ -369,6 +365,8 @@ export function useBoardDetail(boardId: Ref<string>) {
 		ideaSelectedImageFile.value = null;
 		ideaExistingUploadImage.value = getBoardIdeaUploadImage(idea.metadata);
 		ideaImageMode.value = ideaExistingUploadImage.value ? 'upload' : 'url';
+		openWorkspace();
+		setActiveWorkspaceSection('library');
 		void syncIdeaImagePreview();
 		queueIdeaVideoPreviewSync();
 	};
@@ -914,6 +912,8 @@ export function useBoardDetail(boardId: Ref<string>) {
 
 		selectBoardRelations([relation.id]);
 		syncSelectedRelationDraft(relation);
+		openWorkspace();
+		setActiveWorkspaceSection('links');
 	};
 
 	const resetSelectedRelationDraft = () => {
@@ -972,6 +972,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 			conceptNotes.value = '';
 			await loadBoardData();
 			selectConcept(createdConcept.id);
+			setActiveWorkspaceSection('concepts');
 		} catch (error) {
 			pageError.value = error instanceof Error ? error.message : 'Unable to create that concept right now.';
 		}
@@ -985,6 +986,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 			const duplicated = await duplicateConcept(concept.id);
 			await loadBoardData();
 			selectConcept(duplicated.concept.id);
+			setActiveWorkspaceSection('concepts');
 		} catch (error) {
 			pageError.value = error instanceof Error ? error.message : 'Unable to duplicate that concept right now.';
 		} finally {
@@ -995,13 +997,29 @@ export function useBoardDetail(boardId: Ref<string>) {
 	const handleUngroupSelection = async () => {
 		pageError.value = '';
 
-		if (!selectedItemIds.value.length) {
+		if (!selectedItemIds.value.length || !selectionConceptId.value) {
 			pageError.value = 'Select at least one card to ungroup.';
 			return;
 		}
 
 		try {
-			const updatedItems = await removeBoardItemsFromConcept(selectedItemIds.value);
+			const summaryBoardItemIds = boardItems.value
+				.filter((item) => item.concept_id === selectionConceptId.value && isPromotedConceptIdea(item.idea))
+				.map((item) => item.id);
+			const boardItemIdsToUngroup = [...new Set([...selectedItemIds.value, ...summaryBoardItemIds])];
+			const relationIdsToDelete = boardRelations.value
+				.filter((relation) =>
+					relation.kind === 'groups'
+					&& relation.metadata?.generatedBy === 'concept-summary'
+					&& relation.metadata?.conceptId === selectionConceptId.value
+				)
+				.map((relation) => relation.id);
+			const updatedItems = await removeBoardItemsFromConcept(boardItemIdsToUngroup);
+
+			if (relationIdsToDelete.length) {
+				await deleteBoardRelations(relationIdsToDelete);
+				boardRelations.value = boardRelations.value.filter((relation) => !relationIdsToDelete.includes(relation.id));
+			}
 
 			boardItems.value = boardItems.value.map((item) => {
 				const nextItem = updatedItems.find((updated) => updated.id === item.id);
@@ -1233,9 +1251,39 @@ export function useBoardDetail(boardId: Ref<string>) {
 	});
 
 	watch(
+		selectedItemIds,
+		(ids) => {
+			if (ids.length) {
+				openWorkspace();
+
+				if (!selectedBoardRelation.value) {
+					setActiveWorkspaceSection('selection');
+				}
+
+				return;
+			}
+
+			if (!selectedBoardRelation.value && activeWorkspaceSection.value === 'selection') {
+				setActiveWorkspaceSection('library');
+			}
+		},
+		{ deep: true }
+	);
+
+	watch(
 		selectedBoardRelation,
 		(relation) => {
 			syncSelectedRelationDraft(relation);
+
+			if (relation) {
+				openWorkspace();
+				setActiveWorkspaceSection('links');
+				return;
+			}
+
+			if (!selectedItemIds.value.length && activeWorkspaceSection.value === 'links') {
+				setActiveWorkspaceSection('library');
+			}
 		},
 		{ immediate: true }
 	);
@@ -1288,12 +1336,11 @@ export function useBoardDetail(boardId: Ref<string>) {
 		ideaTagsInput,
 		ideaTitle,
 		ideaType,
-		isLibraryOpen,
 		isIdeaEditorModalOpen,
-		isRightRailOpen,
+		isWorkspaceOpen,
 		isSavingIdea,
 		ideaEditorModalTitle,
-		leftColumnClass,
+		activeWorkspaceSection,
 		libraryTagFilter,
 		libraryTypeFilter,
 		closeIdeaEditorModal,
@@ -1311,6 +1358,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 		resetSelectedRelationDraft,
 		resetIdeaForm,
 		saveBoardItemPosition,
+		setActiveWorkspaceSection,
 		selectBoardItems,
 		selectBoardRelations,
 		selectConcept,
@@ -1323,8 +1371,8 @@ export function useBoardDetail(boardId: Ref<string>) {
 		selectionConceptId,
 		setPageError,
 		sortedBoardItems,
-		toggleLibrary,
-		toggleRightRail,
+		openWorkspace,
+		toggleWorkspace,
 		toggleSelection,
 		visibleConcepts,
 	};

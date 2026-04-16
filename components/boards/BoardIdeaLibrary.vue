@@ -2,7 +2,13 @@
 import BoardIdeaEditorForm from '~/components/boards/BoardIdeaEditorForm.vue';
 import BoardIdeaImage from '~/components/boards/BoardIdeaImage.vue';
 import type { Idea, IdeaMediaSource, IdeaType } from '~/types/board';
-import { IDEA_TYPE_OPTIONS, formatIdeaTypeLabel } from '~/utils/board';
+import {
+	IDEA_TYPE_OPTIONS,
+	formatIdeaTypeLabel,
+	getPromotedConceptMemberCount,
+	getPromotedConceptMemberTitles,
+	isPromotedConceptIdea,
+} from '~/utils/board';
 
 defineProps<{
 	allTags: string[];
@@ -171,6 +177,21 @@ const libraryTagFilter = defineModel<string>('libraryTagFilter', { required: tru
 					<p v-if="idea.description" class="mt-2 text-sm text-gray-600">
 						{{ idea.description }}
 					</p>
+
+					<div
+						v-if="isPromotedConceptIdea(idea) && getPromotedConceptMemberCount(idea)"
+						class="mt-3 rounded-2xl border border-green-900/10 bg-green-50/60 px-3 py-3"
+					>
+						<p class="text-xs font-semibold uppercase tracking-wide text-green-700/70">
+							{{ getPromotedConceptMemberCount(idea) }} linked member{{ getPromotedConceptMemberCount(idea) === 1 ? '' : 's' }}
+						</p>
+						<p
+							v-if="getPromotedConceptMemberTitles(idea).length"
+							class="mt-2 text-sm text-green-900"
+						>
+							{{ getPromotedConceptMemberTitles(idea).slice(0, 3).join(' · ') }}
+						</p>
+					</div>
 
 					<div v-if="idea.reference_url" class="mt-3">
 						<a

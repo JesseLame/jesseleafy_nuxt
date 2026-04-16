@@ -56,17 +56,18 @@ export function boardRelationToFlowEdge(relation: BoardRelation, selected = fals
 		labelBgPadding: [8, 4],
 		labelBgBorderRadius: 999,
 		style: {
-			stroke: kind === 'contrast' ? '#dc2626' : '#166534',
+			stroke: kind === 'contrast' ? '#dc2626' : kind === 'groups' ? '#b45309' : '#166534',
 			strokeWidth: 2,
+			strokeDasharray: kind === 'groups' ? '6 4' : undefined,
 		},
 		labelStyle: {
-			fill: '#14532d',
+			fill: kind === 'groups' ? '#92400e' : '#14532d',
 			fontSize: '12px',
 			fontWeight: 600,
 		},
 		labelBgStyle: {
-			fill: '#f0fdf4',
-			stroke: '#bbf7d0',
+			fill: kind === 'groups' ? '#fffbeb' : '#f0fdf4',
+			stroke: kind === 'groups' ? '#fcd34d' : '#bbf7d0',
 			strokeWidth: 1,
 		},
 		data: {

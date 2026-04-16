@@ -1,4 +1,5 @@
 export type IdeaType =
+	| 'concept'
 	| 'technique'
 	| 'component'
 	| 'finished_product'
@@ -6,6 +7,13 @@ export type IdeaType =
 	| 'flavor'
 	| 'constraint'
 	| 'reference';
+
+export interface PromotedConceptMetadata {
+	conceptId: string;
+	memberIdeaIds: string[];
+	memberTitles: string[];
+	memberCount: number;
+}
 
 export interface BoardIdeaUploadImage {
 	source: 'upload';
@@ -27,6 +35,7 @@ export interface BoardIdeaVideoReference {
 export interface IdeaMetadata extends Record<string, unknown> {
 	boardImage?: BoardIdeaUploadImage | null;
 	videoReference?: BoardIdeaVideoReference | null;
+	promotedConcept?: PromotedConceptMetadata | null;
 }
 
 export interface IdeaMediaSource {
@@ -56,7 +65,10 @@ export interface Board {
 	updated_at: string;
 }
 
-export interface BoardRelationMetadata extends Record<string, unknown> {}
+export interface BoardRelationMetadata extends Record<string, unknown> {
+	generatedBy?: 'concept-summary';
+	conceptId?: string;
+}
 
 export interface BoardRelation {
 	id: string;

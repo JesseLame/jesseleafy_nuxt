@@ -126,32 +126,29 @@ watch([nodes, edges], emitSelectionChange, { deep: true });
 </script>
 
 <template>
-	<section class="min-w-0 flex-1 rounded-3xl bg-white/85 p-5 shadow-xl backdrop-blur-sm">
+	<section class="board-studio-panel min-w-0 flex-1 p-5 sm:p-6">
 		<div class="flex items-center justify-between gap-3">
 			<div>
-				<p class="text-xs font-semibold uppercase tracking-[0.22em] text-green-700/70">
+				<p class="board-studio-kicker">
 					Canvas
 				</p>
-				<h2 class="mt-2 text-2xl font-bold text-green-900">
+				<h2 class="board-studio-display mt-3 text-[2rem] leading-none text-[color:var(--board-ink)]">
 					Hybrid board
 				</h2>
-				<p class="mt-2 text-sm text-gray-600">
-					Drag cards, resize them, pan and zoom the board, then connect ideas with handles when relationships matter.
-				</p>
 			</div>
 
-			<div class="rounded-full bg-green-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-green-800">
+			<div class="board-studio-pill">
 				{{ boardItems.length }} cards · {{ boardRelations.length }} links
 			</div>
 		</div>
 
-		<div class="relative mt-5 overflow-hidden rounded-3xl border border-green-900/10 bg-white/70">
+		<div class="relative mt-6 overflow-hidden rounded-[1.9rem] border border-[color:var(--board-outline)] bg-[color:var(--board-paper-soft)]">
 			<ClientOnly>
 				<div class="h-[75vh] min-h-[48rem] w-full">
 					<VueFlow
 						v-model:nodes="nodes"
 						v-model:edges="edges"
-						class="h-full w-full bg-[radial-gradient(circle_at_top,rgba(220,252,231,0.55),rgba(255,255,255,0.95)_55%)]"
+						class="h-full w-full bg-[radial-gradient(circle_at_top_left,rgba(214,164,107,0.16),transparent_28%),radial-gradient(circle_at_top,rgba(167,197,164,0.28),transparent_34%),linear-gradient(180deg,rgba(255,250,245,0.98),rgba(247,242,232,0.95))]"
 						fit-view-on-init
 						:min-zoom="0.2"
 						:max-zoom="1.6"
@@ -170,7 +167,7 @@ watch([nodes, edges], emitSelectionChange, { deep: true });
 						@selection-drag-start="handleSelectionDragStart"
 						@selection-drag-stop="handleSelectionDragStop"
 					>
-						<Background variant="lines" :gap="32" color="rgba(34, 197, 94, 0.12)" />
+						<Background variant="lines" :gap="32" color="rgba(36, 77, 58, 0.1)" />
 						<Controls position="top-right" />
 
 						<template #node-board-card="nodeProps">
@@ -185,7 +182,7 @@ watch([nodes, edges], emitSelectionChange, { deep: true });
 				</div>
 
 				<template #fallback>
-					<div class="flex h-[60vh] min-h-[32rem] items-center justify-center px-6 text-center text-sm text-green-900/80">
+					<div class="flex h-[60vh] min-h-[32rem] items-center justify-center px-6 text-center text-sm text-[color:var(--board-muted)]">
 						Loading board canvas...
 					</div>
 				</template>
@@ -193,13 +190,16 @@ watch([nodes, edges], emitSelectionChange, { deep: true });
 
 			<div
 				v-if="!boardItems.length"
-				class="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-green-900/80"
+				class="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-[color:var(--board-muted)]"
 			>
-				<div class="max-w-md rounded-3xl bg-white/90 px-8 py-10 shadow-lg">
-					<h3 class="text-xl font-semibold text-green-900">
+				<div class="board-studio-card max-w-md px-8 py-10">
+					<p class="board-studio-kicker">
+						Blank canvas
+					</p>
+					<h3 class="board-studio-display mt-3 text-[1.8rem] leading-none text-[color:var(--board-ink)]">
 						Start by placing an idea on the board
 					</h3>
-					<p class="mt-2 text-sm text-gray-700">
+					<p class="mt-3 text-sm leading-6 text-[color:var(--board-muted)]">
 						Use the library on the left to add reusable pieces, then drag from a card handle when you want to show how ideas connect.
 					</p>
 				</div>

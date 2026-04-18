@@ -1,6 +1,7 @@
 import { watch } from 'vue'
+import type { RecipeLang } from '~/types/recipe'
 
-export type RecipeLang = 'en' | 'nl'
+export type { RecipeLang } from '~/types/recipe'
 
 type SupportedLanguage = {
   code: RecipeLang

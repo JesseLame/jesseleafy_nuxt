@@ -1,15 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, watchEffect } from 'vue'
 import type { RecipeLang } from '~/composables/useRecipeLanguage'
-
-type RecipeListItem = {
-    path: string
-    title?: string
-    description?: string
-    tags?: string[]
-    category?: string
-    image?: string
-}
+import type { RecipeSummary } from '~/types/recipe'
 
 const { language, setLanguage, supportedLanguages } = useRecipeLanguage()
 
@@ -41,27 +33,21 @@ const copyByLanguage: Record<RecipeLang, {
 
 const copy = computed(() => copyByLanguage[language.value])
 
-const { data: recipes } = await useAsyncData('recipeData', () => queryCollection('recipes').all())
+const { data: recipes } = await useAsyncData<RecipeSummary[]>(
+    () => `recipeData-${language.value}`,
+    () => $fetch('/api/recipes', { params: { lang: language.value } }),
+    {
+        watch: [language],
+        default: () => [],
+    }
+)
 
 const searchQuery = ref('')
 const activeCategory = ref<string | null>(null)
 
-const isRecipeLang = (value: string): value is RecipeLang => value === 'en' || value === 'nl'
-
-function extractLanguageFromPath(path: string): RecipeLang | null {
-    const parts = path.split('/').filter(Boolean)
-    const candidate = parts[1]
-    return candidate && isRecipeLang(candidate) ? candidate : null
-}
-
-const recipesForLanguage = computed(() => {
-    const recipeCollection = (recipes.value ?? []) as RecipeListItem[]
-    return recipeCollection.filter((recipe) => extractLanguageFromPath(recipe.path) === language.value)
-})
-
 const categories = computed(() => {
     const categoriesSet = new Set<string>()
-    recipesForLanguage.value.forEach((recipe) => {
+    recipes.value.forEach((recipe) => {
         if (recipe.category) {
             categoriesSet.add(recipe.category)
         }
@@ -73,7 +59,7 @@ const categories = computed(() => {
 const filteredRecipes = computed(() => {
     const q = searchQuery.value.trim().toLowerCase()
 
-    return recipesForLanguage.value.filter((recipe) => {
+    return recipes.value.filter((recipe) => {
         const matchesSearch =
             !q ||
             recipe.title?.toLowerCase().includes(q) ||

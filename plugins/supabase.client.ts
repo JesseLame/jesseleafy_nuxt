@@ -8,9 +8,9 @@ export default defineNuxtPlugin(() => {
 	const isLoading = useState<boolean>('auth-loading', () => true);
 
 	const supabaseUrl = config.public.supabaseUrl;
-	const supabaseAnonKey = config.public.supabaseAnonKey;
+	const supabasePublishableKey = config.public.supabasePublishableKey;
 
-	if (!supabaseUrl || !supabaseAnonKey) {
+	if (!supabaseUrl || !supabasePublishableKey) {
 		session.value = null;
 		user.value = null;
 		isLoading.value = false;
@@ -22,7 +22,7 @@ export default defineNuxtPlugin(() => {
 		};
 	}
 
-	const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+	const supabase = createClient(supabaseUrl, supabasePublishableKey, {
 		auth: {
 			autoRefreshToken: true,
 			detectSessionInUrl: true,

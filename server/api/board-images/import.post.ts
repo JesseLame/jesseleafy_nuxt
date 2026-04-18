@@ -204,10 +204,10 @@ async function readImageResponse(response: Response) {
 export default defineEventHandler(async (event): Promise<{ boardImage: BoardIdeaUploadImage }> => {
 	const runtimeConfig = useRuntimeConfig(event);
 	const supabaseUrl = runtimeConfig.public.supabaseUrl;
-	const supabaseAnonKey = runtimeConfig.public.supabaseAnonKey;
+	const supabasePublishableKey = runtimeConfig.public.supabasePublishableKey;
 	const authorization = getHeader(event, 'authorization');
 
-	if (!supabaseUrl || !supabaseAnonKey) {
+	if (!supabaseUrl || !supabasePublishableKey) {
 		throw createHttpError(500, 'Board image imports are unavailable because Supabase is not configured.');
 	}
 
@@ -228,7 +228,7 @@ export default defineEventHandler(async (event): Promise<{ boardImage: BoardIdea
 		throw createHttpError(400, 'Provide an image URL to import.');
 	}
 
-	const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+	const supabase = createClient(supabaseUrl, supabasePublishableKey, {
 		global: {
 			headers: {
 				Authorization: `Bearer ${accessToken}`,

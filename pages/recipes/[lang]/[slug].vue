@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRaw, watch, watchEffect } from 'vue'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import type { RecipeLang } from '~/composables/useRecipeLanguage'
-
-type IngredientGroups = Record<string, string[]>
+import type { RecipeDetail } from '~/types/recipe'
+import {
+    buildRecipePath,
+    flattenIngredientSections,
+    formatIngredientSectionTitle,
+    isRecipeLang,
+    normalizeRecipeHref,
+} from '~/utils/recipe'
 
 type RecipePageCopy = {
     languageLabel: string
@@ -70,9 +76,6 @@ const router = useRouter()
 const { language, setLanguage, supportedLanguages } = useRecipeLanguage()
 
 const slug = computed(() => String(route.params.slug || ''))
-
-const isRecipeLang = (value: unknown): value is RecipeLang => value === 'en' || value === 'nl'
-
 const routeLang = computed<RecipeLang | null>(() => {
     return isRecipeLang(route.params.lang) ? route.params.lang : null
 })
@@ -99,46 +102,35 @@ const replyTexts = ref<Record<number, string>>({})
 const replyAuthors = ref<Record<number, string>>({})
 const showReplyForm = ref<Record<number, boolean>>({})
 
-const { data: recipe } = await useAsyncData(
+const { data: recipe } = await useAsyncData<RecipeDetail | null>(
     () => `recipe-${routeLang.value ?? 'invalid'}-${slug.value}`,
     () => {
         if (!routeLang.value) {
             return null
         }
-        return queryCollection('recipes').path(`/recipes/${routeLang.value}/${slug.value}`).first()
+
+        return $fetch(`/api/recipes/${routeLang.value}/${slug.value}`)
     },
-    { watch: [routeLang, slug] }
+    {
+        watch: [routeLang, slug],
+        default: () => null,
+    }
 )
 
-const ingredientsSplit = computed(() => recipe.value && !Array.isArray(recipe.value.ingredients))
-
-const descriptionLongHTML = computed(() => {
-    const raw = recipe.value?.description_long || ''
-    return md.render(raw.replace(/\\n/g, '\n'))
+const ingredientsSplit = computed(() => {
+    const sections = recipe.value?.ingredientSections ?? []
+    return !(sections.length === 1 && !sections[0]?.title)
 })
 
-const extractRecipeSlugFromHref = (href: string): string | null => {
-    const withLanguage = href.match(/^\/recipes\/(?:en|nl)\/([^/]+?)(?:\.md)?$/)
-    if (withLanguage) {
-        return withLanguage[1]
+const descriptionLongHTML = computed(() => {
+    const raw = recipe.value?.bodyMarkdown || ''
+
+    if (!raw) {
+        return ''
     }
 
-    const withoutLanguage = href.match(/^\/recipes\/([^/]+?)(?:\.md)?$/)
-    if (withoutLanguage) {
-        return withoutLanguage[1]
-    }
-
-    return null
-}
-
-const normalizeRecipeHref = (href: string): string => {
-    const linkedSlug = extractRecipeSlugFromHref(href)
-    if (!linkedSlug) {
-        return href
-    }
-
-    return `/recipes/${activeLanguage.value}/${linkedSlug}`
-}
+    return md.render(raw.replace(/\\n/g, '\n'))
+})
 
 const parseIngredient = (item: string): string => {
     const linkRegex = /\((\/[^\s)]+)\)/
@@ -149,23 +141,16 @@ const parseIngredient = (item: string): string => {
     }
 
     const text = item.replace(linkRegex, '').trim()
-    const normalizedHref = normalizeRecipeHref(match[1])
+    const normalizedHref = normalizeRecipeHref(match[1], activeLanguage.value)
     return `<a href="${normalizedHref}" class="text-green-600 underline hover:text-green-800">${text}</a>`
 }
 
 const setIngredientsAsGroceries = () => {
-    if (!recipe.value?.ingredients) {
+    if (!recipe.value?.ingredientSections.length) {
         return
     }
 
-    let rawIngredients: string[]
-    if (Array.isArray(recipe.value.ingredients)) {
-        rawIngredients = [...toRaw(recipe.value.ingredients)]
-    } else {
-        rawIngredients = Object.values(toRaw(recipe.value.ingredients) as IngredientGroups).flat()
-    }
-
-    const groceries = rawIngredients.map((item) => ({
+    const groceries = flattenIngredientSections(recipe.value.ingredientSections).map((item) => ({
         name: item,
         checked: false
     }))
@@ -183,6 +168,7 @@ const formatDate = (dateStr: string) => {
         minute: '2-digit',
         hour12: false
     }
+
     return new Date(dateStr).toLocaleString(undefined, options)
 }
 
@@ -193,15 +179,14 @@ const switchLanguage = async (targetLanguage: RecipeLang) => {
         return
     }
 
-    const translatedRecipe = await queryCollection('recipes').path(`/recipes/${targetLanguage}/${slug.value}`).first()
-    if (!translatedRecipe) {
+    if (!recipe.value?.availableLanguages.includes(targetLanguage)) {
         const targetLanguageLabel = supportedLanguages.find((option) => option.code === targetLanguage)?.label ?? targetLanguage
         translationAvailabilityMessage.value = copy.value.translationUnavailable(targetLanguageLabel)
         return
     }
 
     setLanguage(targetLanguage)
-    await router.push(`/recipes/${targetLanguage}/${slug.value}`)
+    await router.push(buildRecipePath(targetLanguage, slug.value))
 }
 
 async function submitComment() {
@@ -272,17 +257,17 @@ watchEffect(() => {
             <h2 class="text-2xl font-semibold text-green-700 mb-3">{{ copy.ingredients }}</h2>
 
             <ul v-if="!ingredientsSplit" class="list-disc list-inside space-y-1 text-gray-800">
-                <li v-for="(item, index) in recipe.ingredients" :key="index" v-html="parseIngredient(item as string)">
+                <li v-for="(item, index) in recipe.ingredientSections[0]?.items ?? []" :key="index" v-html="parseIngredient(item)">
                 </li>
             </ul>
 
             <div v-else class="space-y-4">
-                <div v-for="(items, section) in recipe.ingredients" :key="section">
+                <div v-for="(section, index) in recipe.ingredientSections" :key="section.title ?? index">
                     <h3 class="text-xl font-semibold text-green-600 mb-1 capitalize">
-                        {{ String(section).replace(/_/g, ' ') }}
+                        {{ formatIngredientSectionTitle(section.title) }}
                     </h3>
                     <ul class="list-disc list-inside space-y-1 text-gray-800">
-                        <li v-for="item in items" :key="item" v-html="parseIngredient(item)"></li>
+                        <li v-for="item in section.items" :key="item" v-html="parseIngredient(item)"></li>
                     </ul>
                 </div>
             </div>
@@ -291,7 +276,7 @@ watchEffect(() => {
         <section class="mt-8">
             <h2 class="text-2xl font-semibold text-green-700 mb-3">{{ copy.instructions }}</h2>
             <ol class="list-decimal list-inside space-y-2 text-gray-800">
-                <li v-for="step in recipe.instructions" :key="step">{{ step }}</li>
+                <li v-for="step in recipe.instructionSteps" :key="step">{{ step }}</li>
             </ol>
         </section>
 

@@ -1,45 +1,45 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { computed } from 'vue'
 import MarkdownIt from 'markdown-it'
+import type { RecipeDetail } from '~/types/recipe'
+import { formatIngredientSectionTitle, normalizeRecipeHref } from '~/utils/recipe'
 
 const md = new MarkdownIt()
+const language = 'en'
 
-const route = useRoute()
-const slug = route.params.slug
-
-const { data: recipe } = await useAsyncData('recipe', () =>
-  queryCollection('recipes').path(`/recipes/banana`).first()
+const { data: recipe } = await useAsyncData<RecipeDetail | null>(
+  'recipe-test-banana',
+  () => $fetch('/api/recipes/en/banana'),
+  { default: () => null }
 )
 
-// Determine if ingredients are grouped
-const ingredientsSplit = computed(() =>
-  recipe.value && !Array.isArray(recipe.value.ingredients)
-)
+const ingredientsSplit = computed(() => {
+  const sections = recipe.value?.ingredientSections ?? []
+  return !(sections.length === 1 && !sections[0]?.title)
+})
 
 const descriptionLongHTML = computed(() => {
-  const raw = recipe.value?.description_long || ''
-  return md.render(raw.replace(/\\n/g, '\n')) // Replace literal \n with real line breaks
+  const raw = recipe.value?.bodyMarkdown || ''
+
+  if (!raw) {
+    return ''
+  }
+
+  return md.render(raw.replace(/\\n/g, '\n'))
 })
 
 const parseIngredient = (item: string): string => {
-  const linkRegex = /\((\/[^\s)]+)\)/ // Matches (link) pattern
+  const linkRegex = /\((\/[^\s)]+)\)/
   const match = item.match(linkRegex)
 
   if (match) {
     const text = item.replace(linkRegex, '').trim()
-    const href = match[1]
+    const href = normalizeRecipeHref(match[1], language)
     return `<a href="${href}" class="text-green-600 underline hover:text-green-800">${text}</a>`
   } else {
     return item
   }
 }
-
-
-watchEffect(() => {
-  if (recipe.value) {
-    console.log('Recipe:', recipe.value)
-  }
-})
 </script>
 
 <template>
@@ -49,37 +49,31 @@ watchEffect(() => {
     <h1 class="text-2xl sm:text-4xl font-bold mb-4 text-gray-900">{{ recipe.title }}</h1>
     <p class="text-base sm:text-lg text-gray-600 mb-8">{{ recipe.description }}</p>
 
-    <!-- Long description -->
     <div v-if="descriptionLongHTML" class="text-gray-700 mb-6 prose" v-html="descriptionLongHTML"></div>
 
-    <!-- Ingredients -->
     <section>
       <h2 class="text-2xl font-semibold text-green-700 mb-3">Ingredients</h2>
 
-      <!-- Flat list version -->
       <ul v-if="!ingredientsSplit" class="list-disc list-inside space-y-1 text-gray-800">
-        <li v-for="item in recipe.ingredients" :key="item" v-html="parseIngredient(item)"></li>
+        <li v-for="item in recipe.ingredientSections[0]?.items ?? []" :key="item" v-html="parseIngredient(item)"></li>
       </ul>
 
-      <!-- Sectioned list version -->
       <div v-else class="space-y-4">
-        <div v-for="(items, section) in recipe.ingredients" :key="section">
+        <div v-for="(section, index) in recipe.ingredientSections" :key="section.title ?? index">
           <h3 class="text-xl font-semibold text-green-600 mb-1 capitalize">
-            {{ section.replace(/_/g, ' ') }}
+            {{ formatIngredientSectionTitle(section.title) }}
           </h3>
           <ul class="list-disc list-inside space-y-1 text-gray-800">
-            <li v-for="item in items" :key="item" v-html="parseIngredient(item)"></li>
+            <li v-for="item in section.items" :key="item" v-html="parseIngredient(item)"></li>
           </ul>
         </div>
       </div>
     </section>
 
-
-    <!-- Instructions -->
     <section class="mt-8">
       <h2 class="text-2xl font-semibold text-green-700 mb-3">Instructions</h2>
       <ol class="list-decimal list-inside space-y-2 text-gray-800">
-        <li v-for="step in recipe.instructions" :key="step">{{ step }}</li>
+        <li v-for="step in recipe.instructionSteps" :key="step">{{ step }}</li>
       </ol>
     </section>
   </div>

@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 export function useComments(postId: string) {
 	const config = useRuntimeConfig();
 
-	const supabase = createClient(config.public.supabaseUrl, config.public.supabaseAnonKey);
+	const supabase = createClient(config.public.supabaseUrl, config.public.supabasePublishableKey);
 
 	const comments = ref<any[]>([]);
 	const loading = ref(false);
@@ -21,11 +21,7 @@ export function useComments(postId: string) {
 
 			const flatComments = (data ?? []).filter((c) => c.text?.trim() || c.author_name?.trim());
 
-            console.log('Fetched Comments:', flatComments);
-
 			comments.value = nestComments(flatComments);
-
-            console.log('Nested Comments:', comments.value);
 		} catch (err: any) {
 			error.value = err.message || 'Failed to fetch comments';
 		} finally {
@@ -36,7 +32,6 @@ export function useComments(postId: string) {
 
     async function addComment(text: string, author_name: string, parentId: number | null = null) {
 		error.value = null;
-        console.log('Adding comment:', { text, author_name, postId, parentId });
 
 		try {
 			const { data, error: insertError } = await supabase

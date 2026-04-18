@@ -1,5 +1,11 @@
-<script setup>
-const { data: recentRecipes } = await useAsyncData('recentRecipes', async () => {});
+<script setup lang="ts">
+import type { RecipeSummary } from '~/types/recipe'
+
+const { data: recentRecipes } = await useAsyncData<RecipeSummary[]>(
+    'recentRecipes',
+    () => $fetch('/api/recipes', { params: { lang: 'en', limit: 6 } }),
+    { default: () => [] }
+)
 
 
 useSeoMeta({
@@ -48,4 +54,3 @@ useSeoMeta({
         </div>
     </div>
 </template>
-

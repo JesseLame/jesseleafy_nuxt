@@ -134,6 +134,24 @@ function normalizeIngredientSections(value) {
 	})).filter((section) => section.items.length);
 }
 
+function normalizeInstructionSections(value) {
+	if (Array.isArray(value)) {
+		return [{
+			title: null,
+			steps: normalizeStringList(value, 'instructions'),
+		}].filter((section) => section.steps.length);
+	}
+
+	if (!value || typeof value !== 'object' || Array.isArray(value)) {
+		throw new Error('instructions must be either an array of strings or an object of string arrays.');
+	}
+
+	return Object.entries(value).map(([title, steps]) => ({
+		title,
+		steps: normalizeStringList(steps, `instructions.${title}`),
+	})).filter((section) => section.steps.length);
+}
+
 function normalizeTags(value) {
 	if (!Array.isArray(value)) {
 		return [];
@@ -182,7 +200,7 @@ function parseRecipeMarkdown(source, filePath) {
 		tags: normalizeTags(data.tags),
 		createdOn: normalizeCreatedDate(data.created),
 		ingredientSections: normalizeIngredientSections(data.ingredients),
-		instructionSteps: normalizeStringList(data.instructions, 'instructions'),
+		instructionSections: normalizeInstructionSections(data.instructions),
 	};
 }
 
@@ -291,7 +309,7 @@ function buildTranslationRows(recipeEntries, recipeIdBySlug) {
 			description: translation.description,
 			body_markdown: translation.bodyMarkdown,
 			ingredient_sections: translation.ingredientSections,
-			instruction_steps: translation.instructionSteps,
+			instruction_steps: translation.instructionSections,
 			nutrition: null,
 			metadata: {},
 		}));

@@ -1,6 +1,6 @@
 import type { AdminRecipeRecord, AdminRecipeTranslationRecord, AdminRecipeUpdatePayload, RecipeLang } from '~/types/recipe';
 import { RECIPE_LANGUAGES } from '~/types/recipe';
-import { isRecipeStatus, normalizeIngredientSections, normalizeInstructionSteps } from '~/utils/recipe';
+import { isRecipeStatus, normalizeIngredientSections, normalizeInstructionSections } from '~/utils/recipe';
 
 function createPayloadError(statusMessage: string) {
 	return createError({
@@ -64,13 +64,13 @@ function normalizeTranslation(
 	const description = normalizeString(translation.description);
 	const bodyMarkdown = normalizeNullableString(translation.bodyMarkdown);
 	const ingredientSections = normalizeIngredientSections(translation.ingredientSections);
-	const instructionSteps = normalizeInstructionSteps(translation.instructionSteps);
+	const instructionSections = normalizeInstructionSections(translation.instructionSections);
 	const hasContent = Boolean(
 		title
 		|| description
 		|| bodyMarkdown
 		|| ingredientSections.length
-		|| instructionSteps.length
+		|| instructionSections.length
 	);
 
 	if (!hasContent && currentTranslation.exists) {
@@ -86,7 +86,7 @@ function normalizeTranslation(
 		description,
 		bodyMarkdown,
 		ingredientSections,
-		instructionSteps,
+		instructionSections,
 		exists: currentTranslation.exists || hasContent,
 	};
 }

@@ -1,6 +1,6 @@
 ---
 name: recipe-writer
-description: Create recipe markdown files for this repository in content/recipes/en and content/recipes/nl. Use when adding new recipes that must match existing tone and schema, including required keys (title, description, ingredients, instructions, created), dd-MM-yyyy dates, underscore slugs, and optional Dutch output with the same slug.
+description: Create recipe markdown files for this repository in content/recipes/en and content/recipes/nl. Use when adding new recipes that must match existing tone and schema, including required keys (title, description, ingredients, instructions, created), flat or sectioned ingredient/instruction groups, dd-MM-yyyy dates, underscore slugs, and optional Dutch output with the same slug.
 ---
 
 # Recipe Writer
@@ -55,7 +55,7 @@ Each recipe file must:
   - `title` (string)
   - `description` (string)
   - `ingredients` (array of strings, or grouped object of string arrays)
-  - `instructions` (array of strings)
+  - `instructions` (array of strings, or grouped object of string arrays)
   - `created` (`dd-MM-yyyy`)
 - include optional keys only when relevant:
   - `description_long` (two short paragraphs)
@@ -69,6 +69,10 @@ Each recipe file must:
 Ingredient rules:
 - use a flat ingredient array by default
 - use grouped ingredients object only for multi-component recipes (for example `sauce`, `filling`, `toppings`)
+
+Instruction rules:
+- use a flat instruction array by default
+- use grouped instructions object when the recipe naturally has phases (for example `prep`, `cook`, `assemble`)
 
 Internal link rules:
 - when linking another recipe inside ingredient text, use `/recipes/<slug>`
@@ -91,7 +95,7 @@ Before finalizing, verify:
 - required frontmatter keys are present
 - `created` matches `dd-MM-yyyy`
 - `ingredients` is valid (flat list or grouped object)
-- `instructions` is a non-empty array
+- `instructions` is either a non-empty array or a grouped object with non-empty sections
 - markdown body includes heading and short intro paragraph
 - optional `image` is not fabricated
 - EN/NL outputs (when requested) share the same slug and expected paths

@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AdminRecipeRecord, AdminRecipeSummary, AdminRecipeUpdatePayload } from '~/types/recipe';
+import type {
+	AdminRecipeListParams,
+	AdminRecipeListResponse,
+	AdminRecipeRecord,
+	AdminRecipeUpdatePayload,
+} from '~/types/recipe';
 
 function getSupabaseClient() {
 	return import.meta.client ? (useNuxtApp().$supabase as SupabaseClient | null) : null;
@@ -31,14 +36,22 @@ export function useRecipeAdmin() {
 		};
 	};
 
-	const listRecipes = async () => {
-		return $fetch<AdminRecipeSummary[]>('/api/admin/recipes', {
+	const listRecipes = async (params: AdminRecipeListParams = {}) => {
+		return $fetch<AdminRecipeListResponse>('/api/admin/recipes', {
 			headers: await requireAdminHeaders(),
+			params,
 		});
 	};
 
 	const getRecipe = async (recipeId: string) => {
 		return $fetch<AdminRecipeRecord>(`/api/admin/recipes/${recipeId}`, {
+			headers: await requireAdminHeaders(),
+		});
+	};
+
+	const createRecipe = async () => {
+		return $fetch<AdminRecipeRecord>('/api/admin/recipes', {
+			method: 'POST',
 			headers: await requireAdminHeaders(),
 		});
 	};
@@ -52,6 +65,7 @@ export function useRecipeAdmin() {
 	};
 
 	return {
+		createRecipe,
 		listRecipes,
 		getRecipe,
 		updateRecipe,

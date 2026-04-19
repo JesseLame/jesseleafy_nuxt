@@ -27,13 +27,14 @@ ingredients:
     - Mushroom Pâté or store bought(/recipes/mushroom_pate) 
     - Maggi seasoning
 instructions:
-  - In a bowl, mix the garlic, soy sauce, five spice powder, syrup, oyster sauce, Maggi seasoning, and minced lemongrass.
-  - Add the sliced mushrooms and stir to coat well. Marinate for at least 1 hour.
-  - Sauté the mushrooms in a hot pan until browned and cooked through, about 6–8 minutes.
-  - Toast the baguette lightly. Spread lime mayo on one side and vegetarian pate on the other.
-  - Layer the sautéed mushrooms on the mayo side.
-  - Layer with cucumber, pickled vegetables, sautéed mushrooms, chili, and herbs.
-  - Serve immediately, optionally with extra lime wedges on the side.
+  marinate_and_cook:
+    - In a bowl, mix the garlic, soy sauce, five spice powder, syrup, oyster sauce, Maggi seasoning, and minced lemongrass.
+    - Add the sliced mushrooms and stir to coat well. Marinate for at least 1 hour.
+    - Sauté the mushrooms in a hot pan until browned and cooked through, about 6–8 minutes.
+  assemble:
+    - Toast the baguette lightly. Spread lime mayo on one side and vegetarian pate on the other.
+    - Layer the sautéed mushrooms, cucumber, pickled vegetables, chili, and herbs inside the baguette.
+    - Serve immediately, optionally with extra lime wedges on the side.
 created: 09-06-2025
 category: Sandwiches
 tags:

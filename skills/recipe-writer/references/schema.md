@@ -18,7 +18,9 @@ Every recipe frontmatter must include:
 - `ingredients`: one of:
   - array of strings
   - object where each value is an array of strings
-- `instructions`: array of strings
+- `instructions`: one of:
+  - array of strings
+  - object where each value is an array of strings
 - `created`: date string in `dd-MM-yyyy`
 
 ## Optional Frontmatter Keys
@@ -60,6 +62,31 @@ ingredients:
   toppings:
     - spring onion
     - sesame seeds
+```
+
+## Instructions Rules
+
+- Default to a flat instruction array for straightforward recipes.
+- Use grouped object format when the cooking flow has clear phases.
+
+Flat example:
+
+```yaml
+instructions:
+  - Press the tofu dry.
+  - Fry until golden.
+```
+
+Grouped example:
+
+```yaml
+instructions:
+  prep:
+    - Press the tofu dry.
+    - Mix the marinade.
+  cook:
+    - Fry until golden.
+    - Toss with the sauce and serve.
 ```
 
 ## Markdown Body Rules

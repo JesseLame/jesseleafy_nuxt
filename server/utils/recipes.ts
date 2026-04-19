@@ -5,7 +5,7 @@ import { resolveRecipeImageUrl } from '~/utils/recipeImages';
 import {
 	buildRecipePath,
 	normalizeIngredientSections,
-	normalizeInstructionSteps,
+	normalizeInstructionSections,
 } from '~/utils/recipe';
 
 type RecipeTranslationRow = {
@@ -213,7 +213,7 @@ export async function getPublishedRecipeDetail(
 		createdOn: row.created_on,
 		bodyMarkdown: translation.body_markdown?.trim() || null,
 		ingredientSections: normalizeIngredientSections(translation.ingredient_sections),
-		instructionSteps: normalizeInstructionSteps(translation.instruction_steps),
+		instructionSections: normalizeInstructionSections(translation.instruction_steps),
 		nutrition: normalizeNutrition(translation.nutrition),
 		availableLanguages,
 		authors,

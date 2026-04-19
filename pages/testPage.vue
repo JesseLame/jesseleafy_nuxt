@@ -18,6 +18,13 @@ const ingredientsSplit = computed(() => {
   return !(sections.length === 1 && !sections[0]?.title)
 })
 
+const instructionSections = computed(() => recipe.value?.instructionSections ?? [])
+
+const instructionsSplit = computed(() => {
+  const sections = instructionSections.value
+  return !(sections.length === 1 && !sections[0]?.title)
+})
+
 const descriptionLongHTML = computed(() => {
   const raw = recipe.value?.bodyMarkdown || ''
 
@@ -72,9 +79,21 @@ const parseIngredient = (item: string): string => {
 
     <section class="mt-8">
       <h2 class="text-2xl font-semibold text-green-700 mb-3">Instructions</h2>
-      <ol class="list-decimal list-inside space-y-2 text-gray-800">
-        <li v-for="step in recipe.instructionSteps" :key="step">{{ step }}</li>
+
+      <ol v-if="!instructionsSplit" class="list-decimal list-inside space-y-2 text-gray-800">
+        <li v-for="step in instructionSections[0]?.steps ?? []" :key="step">{{ step }}</li>
       </ol>
+
+      <div v-else class="space-y-4">
+        <div v-for="(section, index) in instructionSections" :key="section.title ?? index">
+          <h3 class="text-xl font-semibold text-green-600 mb-1 capitalize">
+            {{ formatIngredientSectionTitle(section.title) }}
+          </h3>
+          <ol class="list-decimal list-inside space-y-2 text-gray-800">
+            <li v-for="step in section.steps" :key="step">{{ step }}</li>
+          </ol>
+        </div>
+      </div>
     </section>
   </div>
 

@@ -1,23 +1,30 @@
 <script setup lang="ts">
-import type { AdminRecipeSummary, RecipeStatus } from '~/types/recipe';
+import { computed } from 'vue';
+import type { AdminRecipeListStatusFilter, AdminRecipeSummary, RecipeStatus } from '~/types/recipe';
 
 const searchQuery = defineModel<string>('searchQuery', { required: true });
-const statusFilter = defineModel<'all' | RecipeStatus>('statusFilter', { required: true });
+const statusFilter = defineModel<AdminRecipeListStatusFilter>('statusFilter', { required: true });
 
 const props = defineProps<{
 	recipes: AdminRecipeSummary[];
-	recipesCount: number;
+	creating: boolean;
+	currentPage: number;
+	pageSize: number;
 	selectedRecipeId: string;
 	loading: boolean;
 	errorMessage: string;
+	totalCount: number;
+	totalPages: number;
 }>();
 
 const emit = defineEmits<{
+	'change-page': [page: number];
+	create: [];
 	refresh: [];
 	select: [recipeId: string];
 }>();
 
-const statusOptions: Array<{ value: 'all' | RecipeStatus; label: string }> = [
+const statusOptions: Array<{ value: AdminRecipeListStatusFilter; label: string }> = [
 	{ value: 'all', label: 'All statuses' },
 	{ value: 'draft', label: 'Drafts' },
 	{ value: 'published', label: 'Published' },
@@ -47,6 +54,20 @@ const formatDate = (value: string) => {
 const getRecipeTitle = (recipe: AdminRecipeSummary) => {
 	return recipe.titles.en || recipe.titles.nl || 'Untitled recipe';
 };
+
+const visibleRangeLabel = computed(() => {
+	if (!props.totalCount || !props.recipes.length) {
+		return '0 of 0';
+	}
+
+	const rangeStart = (props.currentPage - 1) * props.pageSize + 1;
+	const rangeEnd = rangeStart + props.recipes.length - 1;
+
+	return `${rangeStart}-${rangeEnd} of ${props.totalCount}`;
+});
+
+const canGoPrevious = computed(() => !props.loading && props.currentPage > 1);
+const canGoNext = computed(() => !props.loading && props.currentPage < props.totalPages);
 </script>
 
 <template>
@@ -64,14 +85,25 @@ const getRecipeTitle = (recipe: AdminRecipeSummary) => {
 				</p>
 			</div>
 
-			<button
-				type="button"
-				class="board-studio-button board-studio-button-secondary"
-				:disabled="loading"
-				@click="emit('refresh')"
-			>
-				Refresh
-			</button>
+			<div class="flex flex-wrap items-center gap-2">
+				<button
+					type="button"
+					class="board-studio-button board-studio-button-primary"
+					:disabled="loading || props.creating"
+					@click="emit('create')"
+				>
+					{{ props.creating ? 'Creating...' : 'Create recipe' }}
+				</button>
+
+				<button
+					type="button"
+					class="board-studio-button board-studio-button-secondary"
+					:disabled="loading"
+					@click="emit('refresh')"
+				>
+					Refresh
+				</button>
+			</div>
 		</div>
 
 		<div class="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr),10.5rem] md:grid-cols-1 lg:grid-cols-[minmax(0,1fr),10.5rem]">
@@ -101,10 +133,10 @@ const getRecipeTitle = (recipe: AdminRecipeSummary) => {
 
 		<div class="mt-3 flex flex-wrap gap-2">
 			<span class="board-studio-pill board-studio-pill-compact">
-				{{ recipes.length }} shown
+				{{ visibleRangeLabel }}
 			</span>
 			<span class="board-studio-pill board-studio-pill-compact">
-				{{ props.recipesCount }} total
+				Page {{ props.currentPage }} of {{ props.totalPages }}
 			</span>
 		</div>
 
@@ -173,6 +205,32 @@ const getRecipeTitle = (recipe: AdminRecipeSummary) => {
 					</span>
 				</div>
 			</button>
+		</div>
+
+		<div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--board-outline)] pt-4">
+			<p class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--board-muted)]">
+				Page {{ props.currentPage }} of {{ props.totalPages }}
+			</p>
+
+			<div class="flex items-center gap-2">
+				<button
+					type="button"
+					class="board-studio-button board-studio-button-secondary"
+					:disabled="!canGoPrevious"
+					@click="emit('change-page', props.currentPage - 1)"
+				>
+					Previous
+				</button>
+
+				<button
+					type="button"
+					class="board-studio-button board-studio-button-secondary"
+					:disabled="!canGoNext"
+					@click="emit('change-page', props.currentPage + 1)"
+				>
+					Next
+				</button>
+			</div>
 		</div>
 	</aside>
 </template>

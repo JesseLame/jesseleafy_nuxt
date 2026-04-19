@@ -2,17 +2,27 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import RecipeAdminEditorPanel from '~/components/admin/RecipeAdminEditorPanel.vue';
 import RecipeAdminListPanel from '~/components/admin/RecipeAdminListPanel.vue';
-import type {
-	AdminRecipeRecord,
-	AdminRecipeSummary,
-	AdminRecipeUpdatePayload,
-	RecipeStatus,
+import {
+	RECIPE_STATUSES,
+	type AdminRecipeListStatusFilter,
+	type AdminRecipeRecord,
+	type AdminRecipeSummary,
+	type AdminRecipeUpdatePayload,
+	type RecipeStatus,
 } from '~/types/recipe';
 import {
 	getRecipeImageSourceLabel,
 	getRecipeImageValidationError,
 	getRecipeStorageImage,
 } from '~/utils/recipeImages';
+
+const DEFAULT_ADMIN_RECIPE_PAGE_SIZE = 25;
+const SEARCH_DEBOUNCE_MS = 250;
+const EMPTY_STATUS_COUNTS: Record<RecipeStatus, number> = {
+	archived: 0,
+	draft: 0,
+	published: 0,
+};
 
 useSeoMeta({
 	title: "Recipe Admin - Jesse's Leafy Feasts",
@@ -22,14 +32,19 @@ useSeoMeta({
 const route = useRoute();
 const router = useRouter();
 const { isAuthenticated, isAdmin, isLoading } = useAuth();
-const { getRecipe, listRecipes, updateRecipe } = useRecipeAdmin();
+const { createRecipe, getRecipe, listRecipes, updateRecipe } = useRecipeAdmin();
 const { deleteRecipeImage, resolveRecipeImagePreviewUrl, uploadRecipeImage } = useRecipeImages();
 
 const recipes = ref<AdminRecipeSummary[]>([]);
 const searchQuery = ref('');
-const statusFilter = ref<'all' | RecipeStatus>('all');
+const statusFilter = ref<AdminRecipeListStatusFilter>('all');
+const totalCount = ref(0);
+const totalPages = ref(1);
+const pageSize = ref(DEFAULT_ADMIN_RECIPE_PAGE_SIZE);
+const statusCounts = ref<Record<RecipeStatus, number>>({ ...EMPTY_STATUS_COUNTS });
 const loadingRecipes = ref(false);
 const loadingRecipe = ref(false);
+const creatingRecipe = ref(false);
 const savingRecipe = ref(false);
 const listError = ref('');
 const editorError = ref('');
@@ -43,36 +58,45 @@ const selectedImagePreviewUrl = ref('');
 const imageError = ref('');
 
 let detailRequestId = 0;
+let listRequestId = 0;
+let searchDebounceTimeout: ReturnType<typeof setTimeout> | null = null;
 
-const selectedRecipeId = computed(() => {
-	const value = route.query.recipe;
+function getSingleQueryValue(value: unknown) {
 	return Array.isArray(value) ? value[0] ?? '' : typeof value === 'string' ? value : '';
+}
+
+function isRecipeStatus(value: string): value is RecipeStatus {
+	return RECIPE_STATUSES.includes(value as RecipeStatus);
+}
+
+const selectedRecipeId = computed(() => getSingleQueryValue(route.query.recipe));
+
+const currentPage = computed(() => {
+	const value = getSingleQueryValue(route.query.page);
+	const parsedPage = Number.parseInt(value, 10);
+
+	if (!Number.isInteger(parsedPage) || parsedPage <= 0) {
+		return 1;
+	}
+
+	return parsedPage;
 });
 
-const publishedCount = computed(() => recipes.value.filter((recipe) => recipe.status === 'published').length);
-const draftCount = computed(() => recipes.value.filter((recipe) => recipe.status === 'draft').length);
-const archivedCount = computed(() => recipes.value.filter((recipe) => recipe.status === 'archived').length);
+const activeStatusFilter = computed<AdminRecipeListStatusFilter>(() => {
+	const value = getSingleQueryValue(route.query.status).trim();
 
-const filteredRecipes = computed(() => {
-	const normalizedQuery = searchQuery.value.trim().toLowerCase();
+	if (!value || value === 'all') {
+		return 'all';
+	}
 
-	return recipes.value.filter((recipe) => {
-		if (statusFilter.value !== 'all' && recipe.status !== statusFilter.value) {
-			return false;
-		}
-
-		if (!normalizedQuery) {
-			return true;
-		}
-
-		const titleHaystack = [recipe.titles.en, recipe.titles.nl]
-			.filter((value): value is string => Boolean(value))
-			.join(' ')
-			.toLowerCase();
-
-		return recipe.slug.toLowerCase().includes(normalizedQuery) || titleHaystack.includes(normalizedQuery);
-	});
+	return isRecipeStatus(value) ? value : 'all';
 });
+
+const activeSearchQuery = computed(() => getSingleQueryValue(route.query.q).trim());
+
+const publishedCount = computed(() => statusCounts.value.published);
+const draftCount = computed(() => statusCounts.value.draft);
+const archivedCount = computed(() => statusCounts.value.archived);
 
 const selectedRecipeSummary = computed(() => {
 	return recipes.value.find((recipe) => recipe.id === selectedRecipeId.value) ?? null;
@@ -170,24 +194,98 @@ function getErrorMessage(error: unknown, fallbackMessage: string) {
 	return fallbackMessage;
 }
 
-async function replaceSelectedRecipe(recipeId: string | null) {
+function clearSearchDebounce() {
+	if (!searchDebounceTimeout) {
+		return;
+	}
+
+	clearTimeout(searchDebounceTimeout);
+	searchDebounceTimeout = null;
+}
+
+async function replaceAdminListState(options: {
+	page?: number;
+	q?: string;
+	recipe?: string | null;
+	status?: AdminRecipeListStatusFilter;
+}) {
+	const nextPage = options.page ?? currentPage.value;
+	const nextStatus = options.status ?? activeStatusFilter.value;
+	const nextQueryValue = (options.q ?? activeSearchQuery.value).trim();
+	const nextRecipeId = options.recipe === undefined ? (selectedRecipeId.value || null) : options.recipe;
+	const currentRecipeId = selectedRecipeId.value || null;
+
+	if (
+		nextPage === currentPage.value
+		&& nextStatus === activeStatusFilter.value
+		&& nextQueryValue === activeSearchQuery.value
+		&& nextRecipeId === currentRecipeId
+	) {
+		return;
+	}
+
 	const nextQuery = { ...route.query };
 
-	if (recipeId) {
-		nextQuery.recipe = recipeId;
+	if (nextRecipeId) {
+		nextQuery.recipe = nextRecipeId;
 	} else {
 		delete nextQuery.recipe;
+	}
+
+	if (nextPage > 1) {
+		nextQuery.page = String(nextPage);
+	} else {
+		delete nextQuery.page;
+	}
+
+	if (nextStatus !== 'all') {
+		nextQuery.status = nextStatus;
+	} else {
+		delete nextQuery.status;
+	}
+
+	if (nextQueryValue) {
+		nextQuery.q = nextQueryValue;
+	} else {
+		delete nextQuery.q;
 	}
 
 	await router.replace({ query: nextQuery });
 }
 
+async function replaceSelectedRecipe(recipeId: string | null) {
+	await replaceAdminListState({ recipe: recipeId });
+}
+
 async function loadRecipeList() {
+	const requestId = ++listRequestId;
 	loadingRecipes.value = true;
 	listError.value = '';
+	const page = currentPage.value;
+	const status = activeStatusFilter.value;
+	const q = activeSearchQuery.value;
 
 	try {
-		recipes.value = await listRecipes();
+		const response = await listRecipes({
+			page,
+			q,
+			status,
+		});
+
+		if (requestId !== listRequestId) {
+			return;
+		}
+
+		recipes.value = response.items;
+		totalCount.value = response.totalCount;
+		totalPages.value = response.totalPages;
+		pageSize.value = response.pageSize;
+		statusCounts.value = { ...response.statusCounts };
+
+		if (response.page !== page) {
+			await replaceAdminListState({ page: response.page, q, status });
+			return;
+		}
 
 		if (!recipes.value.length) {
 			await replaceSelectedRecipe(null);
@@ -199,11 +297,21 @@ async function loadRecipeList() {
 			await replaceSelectedRecipe(recipes.value[0].id);
 		}
 	} catch (error) {
+		if (requestId !== listRequestId) {
+			return;
+		}
+
 		recipes.value = [];
+		totalCount.value = 0;
+		totalPages.value = 1;
+		pageSize.value = DEFAULT_ADMIN_RECIPE_PAGE_SIZE;
+		statusCounts.value = { ...EMPTY_STATUS_COUNTS };
 		listError.value = getErrorMessage(error, 'Unable to load the recipe shelf right now.');
 		clearEditorState();
 	} finally {
-		loadingRecipes.value = false;
+		if (requestId === listRequestId) {
+			loadingRecipes.value = false;
+		}
 	}
 }
 
@@ -241,6 +349,48 @@ async function handleRecipeSelection(recipeId: string) {
 	}
 
 	await replaceSelectedRecipe(recipeId);
+}
+
+async function handlePageChange(page: number) {
+	if (page < 1 || page === currentPage.value) {
+		return;
+	}
+
+	clearSearchDebounce();
+	await replaceAdminListState({
+		page,
+		q: searchQuery.value,
+		status: statusFilter.value,
+	});
+}
+
+async function handleCreate() {
+	if (creatingRecipe.value || loadingRecipes.value) {
+		return;
+	}
+
+	clearSearchDebounce();
+	creatingRecipe.value = true;
+	listError.value = '';
+	editorError.value = '';
+	saveMessage.value = '';
+
+	try {
+		const recipe = await createRecipe();
+		syncRecipeState(recipe);
+		saveMessage.value = 'Draft recipe created. Add content and save when you are ready.';
+
+		await replaceAdminListState({
+			page: 1,
+			q: '',
+			recipe: recipe.id,
+			status: 'draft',
+		});
+	} catch (error) {
+		listError.value = getErrorMessage(error, 'Unable to create a draft recipe right now.');
+	} finally {
+		creatingRecipe.value = false;
+	}
 }
 
 async function handleSave() {
@@ -337,6 +487,56 @@ function handleRemoveImage() {
 }
 
 watch(
+	activeSearchQuery,
+	(value) => {
+		if (searchQuery.value !== value) {
+			searchQuery.value = value;
+		}
+	},
+	{ immediate: true }
+);
+
+watch(
+	activeStatusFilter,
+	(value) => {
+		if (statusFilter.value !== value) {
+			statusFilter.value = value;
+		}
+	},
+	{ immediate: true }
+);
+
+watch(statusFilter, async (value) => {
+	if (value === activeStatusFilter.value) {
+		return;
+	}
+
+	clearSearchDebounce();
+	await replaceAdminListState({
+		page: 1,
+		q: searchQuery.value,
+		status: value,
+	});
+});
+
+watch(searchQuery, (value) => {
+	clearSearchDebounce();
+
+	if (value.trim() === activeSearchQuery.value) {
+		return;
+	}
+
+	searchDebounceTimeout = setTimeout(() => {
+		searchDebounceTimeout = null;
+		void replaceAdminListState({
+			page: 1,
+			q: value,
+			status: statusFilter.value,
+		});
+	}, SEARCH_DEBOUNCE_MS);
+});
+
+watch(
 	[isLoading, isAuthenticated, isAdmin],
 	async ([loading, authenticated, admin]) => {
 		if (loading) {
@@ -359,6 +559,17 @@ watch(
 		}
 	},
 	{ immediate: true }
+);
+
+watch(
+	[currentPage, activeStatusFilter, activeSearchQuery, isLoading, isAuthenticated, isAdmin],
+	async ([, , , loading, authenticated, admin]) => {
+		if (loading || !authenticated || !admin || !hasLoadedAdminWorkspace.value) {
+			return;
+		}
+
+		await loadRecipeList();
+	}
 );
 
 watch(
@@ -388,6 +599,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+	clearSearchDebounce();
 	clearPendingImageState();
 });
 </script>
@@ -463,11 +675,17 @@ onBeforeUnmount(() => {
 					class="md:col-start-1 md:row-start-1"
 					v-model:search-query="searchQuery"
 					v-model:status-filter="statusFilter"
-					:recipes="filteredRecipes"
-					:recipes-count="recipes.length"
-					:selected-recipe-id="selectedRecipeId"
-					:loading="loadingRecipes"
+					:creating="creatingRecipe"
+					:current-page="currentPage"
 					:error-message="listError"
+					:loading="loadingRecipes"
+					:page-size="pageSize"
+					:recipes="recipes"
+					:selected-recipe-id="selectedRecipeId"
+					:total-count="totalCount"
+					:total-pages="totalPages"
+					@change-page="handlePageChange"
+					@create="handleCreate"
 					@refresh="loadRecipeList"
 					@select="handleRecipeSelection"
 				/>

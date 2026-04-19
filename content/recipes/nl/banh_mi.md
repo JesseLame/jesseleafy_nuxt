@@ -27,13 +27,14 @@ ingredients:
     - Paddenstoelenpate of kant-en-klaar (/recipes/nl/mushroom_pate)
     - Maggi seasoning
 instructions:
-  - Meng in een kom de knoflook, sojasaus, vijfkruidenpoeder, siroop, oestersaus, Maggi seasoning en fijngehakt citroengras.
-  - Voeg de gesneden paddenstoelen toe en schep goed om zodat alles bedekt is. Laat minimaal 1 uur marineren.
-  - Bak de paddenstoelen in een hete pan tot ze bruin en gaar zijn, ongeveer 6-8 minuten.
-  - Toast het stokbrood licht. Besmeer een kant met limoenmayonaise en de andere met vegetarische pate.
-  - Verdeel de gebakken paddenstoelen over de kant met mayonaise.
-  - Beleg met komkommer, ingelegde groenten, chili en verse kruiden.
-  - Serveer direct, eventueel met extra limoenpartjes erbij.
+  marineren_en_bakken:
+    - Meng in een kom de knoflook, sojasaus, vijfkruidenpoeder, siroop, oestersaus, Maggi seasoning en fijngehakt citroengras.
+    - Voeg de gesneden paddenstoelen toe en schep goed om zodat alles bedekt is. Laat minimaal 1 uur marineren.
+    - Bak de paddenstoelen in een hete pan tot ze bruin en gaar zijn, ongeveer 6-8 minuten.
+  opbouwen:
+    - Toast het stokbrood licht. Besmeer een kant met limoenmayonaise en de andere met vegetarische pate.
+    - Verdeel de gebakken paddenstoelen, komkommer, ingelegde groenten, chili en verse kruiden over het brood.
+    - Serveer direct, eventueel met extra limoenpartjes erbij.
 created: 09-06-2025
 category: Broodjes
 tags:

@@ -9,6 +9,11 @@ export interface RecipeIngredientSection {
 	items: string[];
 }
 
+export interface RecipeInstructionSection {
+	title: string | null;
+	steps: string[];
+}
+
 export interface RecipeAuthor {
 	slug: string;
 	displayName: string;
@@ -22,7 +27,7 @@ export interface RecipeTranslation {
 	description: string;
 	bodyMarkdown: string | null;
 	ingredientSections: RecipeIngredientSection[];
-	instructionSteps: string[];
+	instructionSections: RecipeInstructionSection[];
 	nutrition: Record<string, unknown> | null;
 }
 
@@ -48,7 +53,7 @@ export interface AdminRecipeTranslationRecord {
 	description: string;
 	bodyMarkdown: string | null;
 	ingredientSections: RecipeIngredientSection[];
-	instructionSteps: string[];
+	instructionSections: RecipeInstructionSection[];
 	exists: boolean;
 }
 
@@ -60,6 +65,29 @@ export interface AdminRecipeSummary {
 	updatedAt: string;
 	titles: Partial<Record<RecipeLang, string>>;
 	availableLanguages: RecipeLang[];
+}
+
+export type AdminRecipeListStatusFilter = 'all' | RecipeStatus;
+
+export interface AdminRecipeStatusCounts {
+	draft: number;
+	published: number;
+	archived: number;
+}
+
+export interface AdminRecipeListParams {
+	page?: number;
+	status?: AdminRecipeListStatusFilter;
+	q?: string;
+}
+
+export interface AdminRecipeListResponse {
+	items: AdminRecipeSummary[];
+	page: number;
+	pageSize: number;
+	totalCount: number;
+	totalPages: number;
+	statusCounts: AdminRecipeStatusCounts;
 }
 
 export interface AdminRecipeRecord {

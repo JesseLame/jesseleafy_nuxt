@@ -1,14 +1,21 @@
+import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
 	RECIPE_LANGUAGES,
+	RECIPE_STATUSES,
+	type AdminRecipeListParams,
+	type AdminRecipeListResponse,
 	type AdminRecipeRecord,
+	type AdminRecipeStatusCounts,
 	type AdminRecipeSummary,
 	type AdminRecipeTranslationRecord,
 	type AdminRecipeUpdatePayload,
 	type RecipeLang,
 	type RecipeStatus,
 } from '~/types/recipe';
-import { normalizeIngredientSections, normalizeInstructionSteps } from '~/utils/recipe';
+import { normalizeIngredientSections, normalizeInstructionSections } from '~/utils/recipe';
+
+const ADMIN_RECIPE_PAGE_SIZE = 25;
 
 type AdminRecipeTranslationRow = {
 	locale: string;
@@ -26,6 +33,14 @@ type AdminRecipeSummaryRow = {
 	created_on: string;
 	updated_at: string;
 	recipe_translations: Array<Pick<AdminRecipeTranslationRow, 'locale' | 'title'>> | null;
+};
+
+type AdminRecipeIdRow = {
+	id: string;
+};
+
+type AdminRecipeTranslationIdRow = {
+	recipe_id: string;
 };
 
 type AdminRecipeDetailRow = {
@@ -61,7 +76,7 @@ function createEmptyTranslationRecord(): AdminRecipeTranslationRecord {
 		description: '',
 		bodyMarkdown: null,
 		ingredientSections: [],
-		instructionSteps: [],
+		instructionSections: [],
 		exists: false,
 	};
 }
@@ -83,7 +98,7 @@ function buildTranslationRecord(
 			description: row.description?.trim() || '',
 			bodyMarkdown: row.body_markdown?.trim() || null,
 			ingredientSections: normalizeIngredientSections(row.ingredient_sections),
-			instructionSteps: normalizeInstructionSteps(row.instruction_steps),
+			instructionSections: normalizeInstructionSections(row.instruction_steps),
 			exists: true,
 		};
 	}
@@ -129,8 +144,137 @@ function mapAdminRecipeRecord(row: AdminRecipeDetailRow): AdminRecipeRecord {
 	};
 }
 
-export async function listAdminRecipes(client: SupabaseClient): Promise<AdminRecipeSummary[]> {
-	const { data, error } = await client
+function createEmptyStatusCounts(): AdminRecipeStatusCounts {
+	return {
+		archived: 0,
+		draft: 0,
+		published: 0,
+	};
+}
+
+function padDatePart(value: number) {
+	return String(value).padStart(2, '0');
+}
+
+function getCurrentRecipeDate() {
+	const now = new Date();
+
+	return `${now.getFullYear()}-${padDatePart(now.getMonth() + 1)}-${padDatePart(now.getDate())}`;
+}
+
+function buildDraftRecipeSlug() {
+	return `draft_${Date.now()}_${randomUUID().replaceAll('-', '').slice(0, 8)}`;
+}
+
+function isUniqueViolation(error: unknown) {
+	return Boolean(error && typeof error === 'object' && 'code' in error && error.code === '23505');
+}
+
+function escapeSearchPattern(value: string) {
+	return value.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
+}
+
+async function getAdminRecipeStatusCounts(client: SupabaseClient): Promise<AdminRecipeStatusCounts> {
+	const counts = await Promise.all(
+		RECIPE_STATUSES.map(async (status) => {
+			const { count, error } = await client
+				.from('recipes')
+				.select('id', { count: 'exact', head: true })
+				.eq('status', status);
+
+			if (error) {
+				throw error;
+			}
+
+			return [status, count ?? 0] as const;
+		})
+	);
+
+	return {
+		...createEmptyStatusCounts(),
+		...(Object.fromEntries(counts) as Partial<AdminRecipeStatusCounts>),
+	};
+}
+
+async function findMatchingAdminRecipeIds(client: SupabaseClient, searchQuery: string) {
+	const pattern = `%${escapeSearchPattern(searchQuery)}%`;
+	const [{ data: slugMatches, error: slugError }, { data: titleMatches, error: titleError }] = await Promise.all([
+		client
+			.from('recipes')
+			.select('id')
+			.ilike('slug', pattern),
+		client
+			.from('recipe_translations')
+			.select('recipe_id')
+			.ilike('title', pattern),
+	]);
+
+	if (slugError) {
+		throw slugError;
+	}
+
+	if (titleError) {
+		throw titleError;
+	}
+
+	return Array.from(
+		new Set([
+			...((slugMatches ?? []) as AdminRecipeIdRow[]).map((row) => row.id),
+			...((titleMatches ?? []) as AdminRecipeTranslationIdRow[]).map((row) => row.recipe_id),
+		])
+	);
+}
+
+async function fetchAdminRecipeSummariesPage(
+	client: SupabaseClient,
+	page: number,
+	status: 'all' | RecipeStatus,
+	matchingRecipeIds: string[] | null
+) {
+	if (matchingRecipeIds && !matchingRecipeIds.length) {
+		return {
+			items: [] as AdminRecipeSummary[],
+			page: 1,
+			pageSize: ADMIN_RECIPE_PAGE_SIZE,
+			totalCount: 0,
+			totalPages: 1,
+		};
+	}
+
+	let countQuery = client.from('recipes').select('id', { count: 'exact', head: true });
+
+	if (status !== 'all') {
+		countQuery = countQuery.eq('status', status);
+	}
+
+	if (matchingRecipeIds) {
+		countQuery = countQuery.in('id', matchingRecipeIds);
+	}
+
+	const { count, error: countError } = await countQuery;
+
+	if (countError) {
+		throw countError;
+	}
+
+	const totalCount = count ?? 0;
+	const totalPages = totalCount ? Math.ceil(totalCount / ADMIN_RECIPE_PAGE_SIZE) : 1;
+	const normalizedPage = totalCount ? Math.min(page, totalPages) : 1;
+
+	if (!totalCount) {
+		return {
+			items: [] as AdminRecipeSummary[],
+			page: normalizedPage,
+			pageSize: ADMIN_RECIPE_PAGE_SIZE,
+			totalCount,
+			totalPages,
+		};
+	}
+
+	const rangeStart = (normalizedPage - 1) * ADMIN_RECIPE_PAGE_SIZE;
+	const rangeEnd = rangeStart + ADMIN_RECIPE_PAGE_SIZE - 1;
+
+	let dataQuery = client
 		.from('recipes')
 		.select(`
 			id,
@@ -143,13 +287,51 @@ export async function listAdminRecipes(client: SupabaseClient): Promise<AdminRec
 				title
 			)
 		`)
-		.order('updated_at', { ascending: false });
+		.order('updated_at', { ascending: false })
+		.range(rangeStart, rangeEnd);
+
+	if (status !== 'all') {
+		dataQuery = dataQuery.eq('status', status);
+	}
+
+	if (matchingRecipeIds) {
+		dataQuery = dataQuery.in('id', matchingRecipeIds);
+	}
+
+	const { data, error } = await dataQuery;
 
 	if (error) {
 		throw error;
 	}
 
-	return ((data ?? []) as AdminRecipeSummaryRow[]).map((row) => mapAdminRecipeSummary(row));
+	return {
+		items: ((data ?? []) as AdminRecipeSummaryRow[]).map((row) => mapAdminRecipeSummary(row)),
+		page: normalizedPage,
+		pageSize: ADMIN_RECIPE_PAGE_SIZE,
+		totalCount,
+		totalPages,
+	};
+}
+
+export async function listAdminRecipes(
+	client: SupabaseClient,
+	params: AdminRecipeListParams = {}
+): Promise<AdminRecipeListResponse> {
+	const page = typeof params.page === 'number' && params.page > 0 ? params.page : 1;
+	const status = params.status ?? 'all';
+	const searchQuery = params.q?.trim() || '';
+
+	const [statusCounts, matchingRecipeIds] = await Promise.all([
+		getAdminRecipeStatusCounts(client),
+		searchQuery ? findMatchingAdminRecipeIds(client, searchQuery) : Promise.resolve(null),
+	]);
+
+	const pageData = await fetchAdminRecipeSummariesPage(client, page, status, matchingRecipeIds);
+
+	return {
+		...pageData,
+		statusCounts,
+	};
 }
 
 export async function getAdminRecipeRecord(client: SupabaseClient, recipeId: string): Promise<AdminRecipeRecord | null> {
@@ -185,6 +367,43 @@ export async function getAdminRecipeRecord(client: SupabaseClient, recipeId: str
 	}
 
 	return mapAdminRecipeRecord(data as AdminRecipeDetailRow);
+}
+
+export async function createAdminRecipeRecord(client: SupabaseClient): Promise<AdminRecipeRecord> {
+	const createdOn = getCurrentRecipeDate();
+
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		const { data: createdRecipe, error } = await client
+			.from('recipes')
+			.insert({
+				slug: buildDraftRecipeSlug(),
+				status: 'draft',
+				image_path: null,
+				category: null,
+				tags: [],
+				created_on: createdOn,
+			})
+			.select('id')
+			.single();
+
+		if (error) {
+			if (isUniqueViolation(error)) {
+				continue;
+			}
+
+			throw error;
+		}
+
+		const recipe = await getAdminRecipeRecord(client, createdRecipe.id);
+
+		if (!recipe) {
+			throw new Error('Recipe draft was created but could not be loaded.');
+		}
+
+		return recipe;
+	}
+
+	throw new Error('Unable to generate a unique slug for the new draft recipe.');
 }
 
 export async function updateAdminRecipeRecord(
@@ -243,7 +462,7 @@ export async function updateAdminRecipeRecord(
 			description,
 			body_markdown: translation.bodyMarkdown?.trim() || null,
 			ingredient_sections: translation.ingredientSections,
-			instruction_steps: translation.instructionSteps,
+			instruction_steps: translation.instructionSections,
 		};
 
 		if (existingLocales.has(locale)) {

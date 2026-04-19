@@ -127,6 +127,13 @@ const ingredientsSplit = computed(() => {
     return !(sections.length === 1 && !sections[0]?.title)
 })
 
+const instructionSections = computed(() => recipe.value?.instructionSections ?? [])
+
+const instructionsSplit = computed(() => {
+    const sections = instructionSections.value
+    return !(sections.length === 1 && !sections[0]?.title)
+})
+
 const descriptionLongHTML = computed(() => {
     const raw = recipe.value?.bodyMarkdown || ''
 
@@ -300,9 +307,21 @@ watchEffect(() => {
 
         <section class="mt-8">
             <h2 class="text-2xl font-semibold text-green-700 mb-3">{{ copy.instructions }}</h2>
-            <ol class="list-decimal list-inside space-y-2 text-gray-800">
-                <li v-for="step in recipe.instructionSteps" :key="step">{{ step }}</li>
+
+            <ol v-if="!instructionsSplit" class="list-decimal list-inside space-y-2 text-gray-800">
+                <li v-for="(step, index) in instructionSections[0]?.steps ?? []" :key="index">{{ step }}</li>
             </ol>
+
+            <div v-else class="space-y-4">
+                <div v-for="(section, index) in instructionSections" :key="section.title ?? index">
+                    <h3 class="text-xl font-semibold text-green-600 mb-1 capitalize">
+                        {{ formatIngredientSectionTitle(section.title) }}
+                    </h3>
+                    <ol class="list-decimal list-inside space-y-2 text-gray-800">
+                        <li v-for="(step, stepIndex) in section.steps" :key="stepIndex">{{ step }}</li>
+                    </ol>
+                </div>
+            </div>
         </section>
 
         <section class="mt-10">

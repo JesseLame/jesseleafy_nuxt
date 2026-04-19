@@ -26,6 +26,8 @@ const emit = defineEmits<{
 }>();
 
 const activeLocale = ref<RecipeLang>('en');
+const ingredientSectionItemsDrafts = ref<string[]>([]);
+const instructionSectionStepsDrafts = ref<string[]>([]);
 const maxUploadSizeMb = RECIPE_IMAGE_MAX_BYTES / (1024 * 1024);
 
 const statusOptions: Array<{ value: RecipeStatus; label: string }> = [
@@ -65,7 +67,7 @@ const formatDateTime = (value: string) => {
 	}).format(new Date(value));
 };
 
-const updateSectionTitle = (index: number, value: string) => {
+const updateIngredientSectionTitle = (index: number, value: string) => {
 	if (!activeTranslation.value) {
 		return;
 	}
@@ -73,26 +75,58 @@ const updateSectionTitle = (index: number, value: string) => {
 	activeTranslation.value.ingredientSections[index].title = value || null;
 };
 
-const updateSectionItems = (index: number, value: string) => {
+const updateInstructionSectionTitle = (index: number, value: string) => {
 	if (!activeTranslation.value) {
 		return;
 	}
 
-	activeTranslation.value.ingredientSections[index].items = value
+	activeTranslation.value.instructionSections[index].title = value || null;
+};
+
+const normalizeTextareaLines = (value: string) => {
+	return value
 		.split('\n')
-		.map((item) => item.trim())
+		.map((line) => line.trim())
 		.filter(Boolean);
 };
 
-const updateInstructionSteps = (value: string) => {
+const rebuildLineEditorDrafts = () => {
+	if (!activeTranslation.value) {
+		ingredientSectionItemsDrafts.value = [];
+		instructionSectionStepsDrafts.value = [];
+		return;
+	}
+
+	ingredientSectionItemsDrafts.value = activeTranslation.value.ingredientSections.map((section) => section.items.join('\n'));
+	instructionSectionStepsDrafts.value = activeTranslation.value.instructionSections.map((section) => section.steps.join('\n'));
+};
+
+const updateIngredientSectionItems = (index: number, value: string) => {
 	if (!activeTranslation.value) {
 		return;
 	}
 
-	activeTranslation.value.instructionSteps = value
-		.split('\n')
-		.map((step) => step.trim())
-		.filter(Boolean);
+	const section = activeTranslation.value.ingredientSections[index];
+
+	if (!section) {
+		return;
+	}
+
+	section.items = normalizeTextareaLines(value);
+};
+
+const updateInstructionSectionSteps = (index: number, value: string) => {
+	if (!activeTranslation.value) {
+		return;
+	}
+
+	const section = activeTranslation.value.instructionSections[index];
+
+	if (!section) {
+		return;
+	}
+
+	section.steps = normalizeTextareaLines(value);
 };
 
 const handleTagsInput = (event: Event) => {
@@ -106,28 +140,36 @@ const handleTagsInput = (event: Event) => {
 		.filter(Boolean);
 };
 
-const handleSectionTitleInput = (index: number, event: Event) => {
+const handleIngredientSectionTitleInput = (index: number, event: Event) => {
 	if (!(event.target instanceof HTMLInputElement)) {
 		return;
 	}
 
-	updateSectionTitle(index, event.target.value);
+	updateIngredientSectionTitle(index, event.target.value);
 };
 
-const handleSectionItemsInput = (index: number, event: Event) => {
+const handleInstructionSectionTitleInput = (index: number, event: Event) => {
+	if (!(event.target instanceof HTMLInputElement)) {
+		return;
+	}
+
+	updateInstructionSectionTitle(index, event.target.value);
+};
+
+const handleIngredientSectionItemsInput = (index: number, event: Event) => {
 	if (!(event.target instanceof HTMLTextAreaElement)) {
 		return;
 	}
 
-	updateSectionItems(index, event.target.value);
+	updateIngredientSectionItems(index, event.target.value);
 };
 
-const handleInstructionStepsInput = (event: Event) => {
+const handleInstructionSectionStepsInput = (index: number, event: Event) => {
 	if (!(event.target instanceof HTMLTextAreaElement)) {
 		return;
 	}
 
-	updateInstructionSteps(event.target.value);
+	updateInstructionSectionSteps(index, event.target.value);
 };
 
 const addIngredientSection = () => {
@@ -149,6 +191,25 @@ const removeIngredientSection = (index: number) => {
 	activeTranslation.value.ingredientSections.splice(index, 1);
 };
 
+const addInstructionSection = () => {
+	if (!activeTranslation.value) {
+		return;
+	}
+
+	activeTranslation.value.instructionSections.push({
+		title: null,
+		steps: [],
+	});
+};
+
+const removeInstructionSection = (index: number) => {
+	if (!activeTranslation.value) {
+		return;
+	}
+
+	activeTranslation.value.instructionSections.splice(index, 1);
+};
+
 const handleImageFileChange = (event: Event) => {
 	const input = event.target as HTMLInputElement | null;
 	emit('select-image-file', input?.files?.[0] ?? null);
@@ -164,8 +225,24 @@ watch(
 		if (!nextRecipe) {
 			activeLocale.value = 'en';
 		}
+
+		rebuildLineEditorDrafts();
 	},
 	{ immediate: true }
+);
+
+watch(activeLocale, () => {
+	rebuildLineEditorDrafts();
+});
+
+watch(
+	() => [
+		activeTranslation.value?.ingredientSections.length ?? 0,
+		activeTranslation.value?.instructionSections.length ?? 0,
+	],
+	() => {
+		rebuildLineEditorDrafts();
+	}
 );
 </script>
 
@@ -182,7 +259,7 @@ watch(
 			v-else-if="!recipe"
 			class="board-studio-empty flex min-h-[36rem] place-content-center"
 		>
-			Select a recipe from the shelf to start editing.
+			Select a recipe from the shelf or create a new draft to start editing.
 		</div>
 
 		<div v-else class="flex min-w-0 flex-col gap-5">
@@ -373,7 +450,7 @@ watch(
 							Localized content
 						</h3>
 						<p class="mt-1 text-sm text-[var(--board-muted)]">
-							Each locale can have its own body copy, ingredient sections, and instructions.
+							Each locale can have its own body copy, ingredient sections, and instruction sections.
 						</p>
 					</div>
 
@@ -493,18 +570,18 @@ watch(
 											type="text"
 											class="board-studio-input"
 											placeholder="Optional title"
-											@input="handleSectionTitleInput(index, $event)"
+											@input="handleIngredientSectionTitleInput(index, $event)"
 										/>
 									</label>
 
 									<label class="board-studio-label">
 										Items
 										<textarea
-											:value="section.items.join('\n')"
+											v-model="ingredientSectionItemsDrafts[index]"
 											rows="6"
 											class="board-studio-input min-h-[10rem]"
 											placeholder="1 cup flour&#10;2 ripe bananas"
-											@input="handleSectionItemsInput(index, $event)"
+											@input="handleIngredientSectionItemsInput(index, $event)"
 										/>
 									</label>
 								</div>
@@ -512,16 +589,79 @@ watch(
 						</div>
 					</section>
 
-					<label class="board-studio-label">
-						Instruction steps
-						<textarea
-							:value="activeTranslation.instructionSteps.join('\n')"
-							rows="8"
-							class="board-studio-input min-h-[14rem]"
-							placeholder="Enter one instruction step per line."
-							@input="handleInstructionStepsInput"
-						/>
-					</label>
+					<section class="grid gap-4">
+						<div class="flex flex-wrap items-center justify-between gap-3">
+							<div>
+								<h4 class="text-base font-semibold text-[var(--board-accent-strong)]">
+									Instruction sections
+								</h4>
+								<p class="mt-1 text-sm text-[var(--board-muted)]">
+									Create optional phase titles and enter one step per line.
+								</p>
+							</div>
+
+							<button
+								type="button"
+								class="board-studio-button board-studio-button-ghost"
+								@click="addInstructionSection"
+							>
+								Add section
+							</button>
+						</div>
+
+						<div
+							v-if="!activeTranslation.instructionSections.length"
+							class="board-studio-empty"
+						>
+							No instruction sections yet. Add one to structure the cooking flow.
+						</div>
+
+						<div v-else class="grid gap-4">
+							<div
+								v-for="(section, index) in activeTranslation.instructionSections"
+								:key="`${activeLocale}-instruction-section-${index}`"
+								class="board-studio-card p-4"
+							>
+								<div class="flex flex-wrap items-center justify-between gap-3">
+									<h5 class="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--board-muted)]">
+										Section {{ index + 1 }}
+									</h5>
+
+									<button
+										type="button"
+										class="board-studio-button board-studio-button-danger"
+										@click="removeInstructionSection(index)"
+									>
+										Remove
+									</button>
+								</div>
+
+								<div class="mt-4 grid gap-4">
+									<label class="board-studio-label">
+										Section title
+										<input
+											:model-value="section.title || ''"
+											type="text"
+											class="board-studio-input"
+											placeholder="Optional title"
+											@input="handleInstructionSectionTitleInput(index, $event)"
+										/>
+									</label>
+
+									<label class="board-studio-label">
+										Steps
+										<textarea
+											v-model="instructionSectionStepsDrafts[index]"
+											rows="6"
+											class="board-studio-input min-h-[10rem]"
+											placeholder="Toast the bread&#10;Add toppings and serve"
+											@input="handleInstructionSectionStepsInput(index, $event)"
+										/>
+									</label>
+								</div>
+							</div>
+						</div>
+					</section>
 				</div>
 			</section>
 		</div>

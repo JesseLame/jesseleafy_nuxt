@@ -6,7 +6,7 @@ A skill is a set of local instructions to follow that is stored in a `SKILL.md` 
 ### Available skills
 - skill-creator: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Codex's capabilities with specialized knowledge, workflows, or tool integrations. (file: /Users/jesselamerigts/.codex/skills/.system/skill-creator/SKILL.md)
 - skill-installer: Install Codex skills into $CODEX_HOME/skills from a curated list or a GitHub repo path. Use when a user asks to list installable skills, install a curated skill, or install a skill from another repo (including private repos). (file: /Users/jesselamerigts/.codex/skills/.system/skill-installer/SKILL.md)
-- recipe-writer: Create recipe markdown files for this repository in `content/recipes/en` and `content/recipes/nl`. Use when adding new recipes that must match existing tone and schema, including required keys (`title`, `description`, `ingredients`, `instructions`, `created`), `dd-MM-yyyy` dates, underscore slugs, and optional Dutch output with the same slug. (file: /Users/jesselamerigts/WebDev/jesseleafy_nuxt/skills/recipe-writer/SKILL.md)
+- recipe-writer: Create recipe markdown files for this repository in `content/recipes/en` and `content/recipes/nl`. Use when adding new recipes that must match existing tone and schema, including required keys (`title`, `description`, `ingredients`, `instructions`, `created`), flat or sectioned ingredient/instruction groups, `dd-MM-yyyy` dates, underscore slugs, and optional Dutch output with the same slug. (file: /Users/jesselamerigts/WebDev/jesseleafy_nuxt/skills/recipe-writer/SKILL.md)
 - recipe-nl-backfill: Find recipes that exist only in English and backfill Dutch recipes by creating missing `nl` markdown files. Use when you need to translate EN-only recipes, sync missing `nl` recipe files, or run a Dutch recipe backfill safely with preview-before-write confirmation. (file: /Users/jesselamerigts/WebDev/jesseleafy_nuxt/skills/recipe-nl-backfill/SKILL.md)
 
 ### How to use skills
@@ -106,6 +106,9 @@ A skill is a set of local instructions to follow that is stored in a `SKILL.md` 
   - `category`
 - Keep `created` in `dd-MM-yyyy` format.
 - `ingredients` must remain either:
+  - an array of strings, or
+  - an object whose values are arrays of strings.
+- `instructions` must remain either:
   - an array of strings, or
   - an object whose values are arrays of strings.
 - Keep recipe files under `content/recipes/<lang>/<slug>.md`, where `<lang>` is `en` or `nl`.

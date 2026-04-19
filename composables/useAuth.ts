@@ -9,6 +9,7 @@ export function useAuth() {
 	const supabase = import.meta.client ? (useNuxtApp().$supabase as SupabaseClient | null) : null;
 
 	const isAuthenticated = computed(() => Boolean(user.value));
+	const isAdmin = computed(() => user.value?.app_metadata?.role === 'admin');
 
 	const signUp = async ({ name, email, password }: { name: string; email: string; password: string }) => {
 		if (!supabase) {
@@ -120,6 +121,7 @@ export function useAuth() {
 		user,
 		session,
 		isAuthenticated,
+		isAdmin,
 		isLoading,
 		signUp,
 		signInWithPassword,

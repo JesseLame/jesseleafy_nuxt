@@ -5,6 +5,7 @@ import { isRecipeLang } from '~/utils/recipe';
 
 export default defineEventHandler(async (event): Promise<RecipeSummary[]> => {
 	const query = getQuery(event);
+	const runtimeConfig = useRuntimeConfig(event);
 	const lang = Array.isArray(query.lang) ? query.lang[0] : query.lang;
 
 	if (!isRecipeLang(lang)) {
@@ -30,5 +31,5 @@ export default defineEventHandler(async (event): Promise<RecipeSummary[]> => {
 		limit = parsedLimit;
 	}
 
-	return listPublishedRecipes(getServerSupabaseClient(event), lang, limit);
+	return listPublishedRecipes(getServerSupabaseClient(event), lang, limit, runtimeConfig.public.supabaseUrl);
 });

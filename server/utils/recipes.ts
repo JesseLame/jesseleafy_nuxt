@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RecipeAuthor, RecipeDetail, RecipeLang, RecipeSummary } from '~/types/recipe';
 import { RECIPE_LANGUAGES } from '~/types/recipe';
+import { resolveRecipeImageUrl } from '~/utils/recipeImages';
 import {
 	buildRecipePath,
 	normalizeIngredientSections,
@@ -64,7 +65,7 @@ function normalizeNutrition(value: unknown) {
 	return value as Record<string, unknown>;
 }
 
-function mapRecipeSummary(row: RecipeRow, lang: RecipeLang): RecipeSummary | null {
+function mapRecipeSummary(row: RecipeRow, lang: RecipeLang, supabaseUrl?: string | null): RecipeSummary | null {
 	const translation = row.recipe_translations?.find((entry) => entry.locale === lang);
 
 	if (!translation) {
@@ -79,7 +80,7 @@ function mapRecipeSummary(row: RecipeRow, lang: RecipeLang): RecipeSummary | nul
 		description: translation.description,
 		tags: normalizeTags(row.tags),
 		category: row.category?.trim() || null,
-		image: row.image_path?.trim() || null,
+		image: resolveRecipeImageUrl(row.image_path, supabaseUrl),
 		createdOn: row.created_on,
 	};
 }
@@ -99,7 +100,12 @@ function mapRecipeAuthor(row: RecipeAuthorRow): RecipeAuthor | null {
 	};
 }
 
-export async function listPublishedRecipes(client: SupabaseClient, lang: RecipeLang, limit?: number) {
+export async function listPublishedRecipes(
+	client: SupabaseClient,
+	lang: RecipeLang,
+	limit?: number,
+	supabaseUrl?: string | null
+) {
 	let query = client
 		.from('recipes')
 		.select(`
@@ -129,11 +135,16 @@ export async function listPublishedRecipes(client: SupabaseClient, lang: RecipeL
 	}
 
 	return ((data ?? []) as RecipeRow[])
-		.map((row) => mapRecipeSummary(row, lang))
+		.map((row) => mapRecipeSummary(row, lang, supabaseUrl))
 		.filter((row): row is RecipeSummary => Boolean(row));
 }
 
-export async function getPublishedRecipeDetail(client: SupabaseClient, lang: RecipeLang, slug: string) {
+export async function getPublishedRecipeDetail(
+	client: SupabaseClient,
+	lang: RecipeLang,
+	slug: string,
+	supabaseUrl?: string | null
+) {
 	const { data, error } = await client
 		.from('recipes')
 		.select(`
@@ -198,7 +209,7 @@ export async function getPublishedRecipeDetail(client: SupabaseClient, lang: Rec
 		description: translation.description,
 		tags: normalizeTags(row.tags),
 		category: row.category?.trim() || null,
-		image: row.image_path?.trim() || null,
+		image: resolveRecipeImageUrl(row.image_path, supabaseUrl),
 		createdOn: row.created_on,
 		bodyMarkdown: translation.body_markdown?.trim() || null,
 		ingredientSections: normalizeIngredientSections(translation.ingredient_sections),

@@ -60,6 +60,17 @@ A skill is a set of local instructions to follow that is stored in a `SKILL.md` 
 - Do not commit secrets or modify `.env` values.
 - When behavior changes, explain the user-visible impact and verify with commands.
 
+### Deployment and Secrets
+- The production app is deployed on Vercel from the GitHub branch connected to the Vercel project.
+- Local development uses the untracked root `.env`; deployed environments use Vercel project environment variables rather than tracked repo files.
+- Use `.env.example` as the placeholder/reference file only; never commit real secret values.
+- Preferred runtime variables for new work and new documentation are:
+  - `NUXT_PUBLIC_SUPABASE_URL`
+  - `NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+  - `NUXT_SUPABASE_SECRET_KEY`
+- Legacy aliases may still exist in code as compatibility fallbacks, but new setup should use the `NUXT_*` names above.
+- Never move the secret key into `runtimeConfig.public`, client code, or tracked files.
+
 ### Command Policy
 - Install dependencies: `npm install`
 - Start local development: `npm run dev`
@@ -107,8 +118,10 @@ A skill is a set of local instructions to follow that is stored in a `SKILL.md` 
 
 ### State and Runtime Contracts
 - Runtime environment variables currently used by the app:
-  - `SUPABASE_URL`
-  - `SUPABASE_ANON_KEY`
+  - `NUXT_PUBLIC_SUPABASE_URL`
+  - `NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+  - `NUXT_SUPABASE_SECRET_KEY`
+- Legacy aliases may still appear as compatibility fallbacks in code, but they are not the preferred contract for new work.
 - Persisted client-side storage keys currently in use:
   - `recipe_language`
   - `groceries`
@@ -120,8 +133,9 @@ A skill is a set of local instructions to follow that is stored in a `SKILL.md` 
 - This file documents repository process only; it does not change runtime APIs.
 - Existing contracts to preserve include:
   - `RecipeLang = 'en' | 'nl'`
-  - `SUPABASE_URL`
-  - `SUPABASE_ANON_KEY`
+  - `NUXT_PUBLIC_SUPABASE_URL`
+  - `NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+  - `NUXT_SUPABASE_SECRET_KEY` as a server-only runtime secret
   - the `recipes` frontmatter schema in `content.config.ts`
   - the client persistence keys `recipe_language` and `groceries`
 

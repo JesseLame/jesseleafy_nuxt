@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
-const { user, isAuthenticated, isLoading, signOut } = useAuth();
+const { user, isAuthenticated, isAdmin, isLoading, signOut } = useAuth();
 const authError = ref('');
 const authMenuOpen = ref(false);
 const authMenuRef = ref<HTMLElement | null>(null);
@@ -154,10 +154,10 @@ onBeforeUnmount(() => {
 
                             <div v-if="authMenuOpen"
                                 class="absolute right-0 top-full z-20 mt-2 min-w-[11rem] rounded-lg border border-green-700/20 bg-white shadow-lg">
-                                <template v-if="!isAuthenticated">
-                                    <NuxtLink to="/login"
-                                        class="block px-4 py-2 text-left text-green-900 hover:bg-green-50 rounded-t-lg"
-                                        @click="closeAuthMenu">
+								<template v-if="!isAuthenticated">
+									<NuxtLink to="/login"
+										class="block px-4 py-2 text-left text-green-900 hover:bg-green-50 rounded-t-lg"
+										@click="closeAuthMenu">
                                         Login
                                     </NuxtLink>
                                     <NuxtLink to="/create-account"
@@ -165,16 +165,24 @@ onBeforeUnmount(() => {
                                         @click="closeAuthMenu">
                                         Create Account
                                     </NuxtLink>
-                                </template>
+								</template>
 
-                                <button v-else type="button"
-                                    class="block w-full rounded-lg px-4 py-2 text-left text-green-900 hover:bg-green-50"
-                                    @click="handleSignOut">
-                                    Logout
-                                </button>
-                            </div>
-                        </div>
-                    </ClientOnly>
+								<template v-else>
+									<NuxtLink v-if="isAdmin" to="/admin/recipes"
+										class="block px-4 py-2 text-left text-green-900 hover:bg-green-50"
+										@click="closeAuthMenu">
+										Admin
+									</NuxtLink>
+									<button type="button"
+										class="block w-full rounded-lg px-4 py-2 text-left text-green-900 hover:bg-green-50"
+										:class="{ 'rounded-t-none': isAdmin }"
+										@click="handleSignOut">
+										Logout
+									</button>
+								</template>
+							</div>
+						</div>
+					</ClientOnly>
                 </nav>
             </div>
             <p v-if="authError" class="mt-3 text-center text-sm text-red-600">

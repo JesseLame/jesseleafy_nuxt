@@ -4,6 +4,7 @@ import { getServerSupabaseClient } from '~/server/utils/supabase';
 import { isRecipeLang } from '~/utils/recipe';
 
 export default defineEventHandler(async (event): Promise<RecipeDetail | null> => {
+	const runtimeConfig = useRuntimeConfig(event);
 	const lang = getRouterParam(event, 'lang');
 	const slug = getRouterParam(event, 'slug')?.trim();
 
@@ -21,5 +22,5 @@ export default defineEventHandler(async (event): Promise<RecipeDetail | null> =>
 		});
 	}
 
-	return getPublishedRecipeDetail(getServerSupabaseClient(event), lang, slug);
+	return getPublishedRecipeDetail(getServerSupabaseClient(event), lang, slug, runtimeConfig.public.supabaseUrl);
 });

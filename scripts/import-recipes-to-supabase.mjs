@@ -10,6 +10,7 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDirectory, '..');
 const recipesRoot = path.join(projectRoot, 'content', 'recipes');
 const isDryRun = process.argv.includes('--dry-run');
+const RECIPE_IMAGE_STORAGE_PREFIX = 'storage://recipe-images/';
 
 function loadDotEnv() {
 	const envPath = path.join(projectRoot, '.env');
@@ -144,6 +145,14 @@ function normalizeTags(value) {
 		.filter(Boolean);
 }
 
+function normalizeNullableString(value) {
+	return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function isRecipeStorageImagePath(value) {
+	return typeof value === 'string' && value.trim().startsWith(RECIPE_IMAGE_STORAGE_PREFIX);
+}
+
 function parseRecipeMarkdown(source, filePath) {
 	const { frontmatter, body } = splitFrontmatter(source);
 	const parsed = parseYaml(frontmatter);
@@ -221,16 +230,50 @@ async function collectRecipes() {
 	return [...recipesBySlug.values()].sort((left, right) => left.slug.localeCompare(right.slug));
 }
 
-function buildRecipeRows(recipeEntries) {
+function resolveImportedImagePath(nextImagePath, existingImagePath) {
+	const normalizedNextImagePath = normalizeNullableString(nextImagePath);
+	const normalizedExistingImagePath = normalizeNullableString(existingImagePath);
+
+	if (
+		isRecipeStorageImagePath(normalizedExistingImagePath)
+		&& (!normalizedNextImagePath || !isRecipeStorageImagePath(normalizedNextImagePath))
+	) {
+		return normalizedExistingImagePath;
+	}
+
+	return normalizedNextImagePath;
+}
+
+function buildRecipeRows(recipeEntries, existingRecipesBySlug) {
 	return recipeEntries.map((entry) => ({
 		slug: entry.slug,
 		status: 'published',
-		image_path: pickSharedValue(entry.slug, 'image_path', entry.translations, (translation) => translation.imagePath, null),
+		image_path: resolveImportedImagePath(
+			pickSharedValue(entry.slug, 'image_path', entry.translations, (translation) => translation.imagePath, null),
+			existingRecipesBySlug.get(entry.slug)?.image_path ?? null
+		),
 		category: pickSharedValue(entry.slug, 'category', entry.translations, (translation) => translation.category, null),
 		tags: pickSharedValue(entry.slug, 'tags', entry.translations, (translation) => translation.tags, []),
 		created_on: pickSharedValue(entry.slug, 'created_on', entry.translations, (translation) => translation.createdOn, null),
 		metadata: {},
 	}));
+}
+
+async function fetchExistingRecipesBySlug(client, slugs) {
+	if (!slugs.length) {
+		return new Map();
+	}
+
+	const { data, error } = await client
+		.from('recipes')
+		.select('slug, image_path')
+		.in('slug', slugs);
+
+	if (error) {
+		throw error;
+	}
+
+	return new Map((data ?? []).map((recipe) => [recipe.slug, recipe]));
 }
 
 function buildTranslationRows(recipeEntries, recipeIdBySlug) {
@@ -271,13 +314,13 @@ async function main() {
 		console.warn('[warn] SUPABASE_SECRET_KEY is not set. Falling back to SUPABASE_PUBLISHABLE_KEY or SUPABASE_ANON_KEY; writes may fail if RLS is enabled.');
 	}
 
-	const recipeEntries = await collectRecipes();
 	const client = createClient(supabaseUrl, supabaseKey, {
 		auth: {
 			autoRefreshToken: false,
 			persistSession: false,
 		},
 	});
+	const recipeEntries = await collectRecipes();
 
 	if (isDryRun) {
 		const translationCount = recipeEntries.reduce((sum, entry) => sum + entry.translations.length, 0);
@@ -285,7 +328,8 @@ async function main() {
 		return;
 	}
 
-	const recipeRows = buildRecipeRows(recipeEntries);
+	const existingRecipesBySlug = await fetchExistingRecipesBySlug(client, recipeEntries.map((entry) => entry.slug));
+	const recipeRows = buildRecipeRows(recipeEntries, existingRecipesBySlug);
 	const { data: upsertedRecipes, error: recipeUpsertError } = await client
 		.from('recipes')
 		.upsert(recipeRows, { onConflict: 'slug' })

@@ -117,8 +117,13 @@ const { data: recipe } = await useAsyncData<RecipeDetail | null>(
     }
 )
 
+type RenderableIngredient = {
+    href: string | null
+    text: string
+}
+
 const ingredientsSplit = computed(() => {
-    const sections = recipe.value?.ingredientSections ?? []
+    const sections = ingredientSections.value
     return !(sections.length === 1 && !sections[0]?.title)
 })
 
@@ -132,18 +137,29 @@ const descriptionLongHTML = computed(() => {
     return md.render(raw.replace(/\\n/g, '\n'))
 })
 
-const parseIngredient = (item: string): string => {
+const parseIngredient = (item: string): RenderableIngredient => {
     const linkRegex = /\((\/[^\s)]+)\)/
     const match = item.match(linkRegex)
 
     if (!match) {
-        return item
+        return {
+            href: null,
+            text: item,
+        }
     }
 
-    const text = item.replace(linkRegex, '').trim()
-    const normalizedHref = normalizeRecipeHref(match[1], activeLanguage.value)
-    return `<a href="${normalizedHref}" class="text-green-600 underline hover:text-green-800">${text}</a>`
+    return {
+        href: normalizeRecipeHref(match[1], activeLanguage.value),
+        text: item.replace(linkRegex, '').trim(),
+    }
 }
+
+const ingredientSections = computed(() => {
+    return (recipe.value?.ingredientSections ?? []).map((section) => ({
+        title: section.title,
+        items: section.items.map((item) => parseIngredient(item))
+    }))
+})
 
 const setIngredientsAsGroceries = () => {
     if (!recipe.value?.ingredientSections.length) {
@@ -257,17 +273,26 @@ watchEffect(() => {
             <h2 class="text-2xl font-semibold text-green-700 mb-3">{{ copy.ingredients }}</h2>
 
             <ul v-if="!ingredientsSplit" class="list-disc list-inside space-y-1 text-gray-800">
-                <li v-for="(item, index) in recipe.ingredientSections[0]?.items ?? []" :key="index" v-html="parseIngredient(item)">
+                <li v-for="(item, index) in ingredientSections[0]?.items ?? []" :key="index">
+                    <NuxtLink v-if="item.href" :to="item.href" class="text-green-600 underline hover:text-green-800">
+                        {{ item.text }}
+                    </NuxtLink>
+                    <span v-else>{{ item.text }}</span>
                 </li>
             </ul>
 
             <div v-else class="space-y-4">
-                <div v-for="(section, index) in recipe.ingredientSections" :key="section.title ?? index">
+                <div v-for="(section, index) in ingredientSections" :key="section.title ?? index">
                     <h3 class="text-xl font-semibold text-green-600 mb-1 capitalize">
                         {{ formatIngredientSectionTitle(section.title) }}
                     </h3>
                     <ul class="list-disc list-inside space-y-1 text-gray-800">
-                        <li v-for="item in section.items" :key="item" v-html="parseIngredient(item)"></li>
+                        <li v-for="(item, itemIndex) in section.items" :key="itemIndex">
+                            <NuxtLink v-if="item.href" :to="item.href" class="text-green-600 underline hover:text-green-800">
+                                {{ item.text }}
+                            </NuxtLink>
+                            <span v-else>{{ item.text }}</span>
+                        </li>
                     </ul>
                 </div>
             </div>

@@ -103,11 +103,20 @@ using (
 );
 
 drop policy if exists "Authors are public readable" on public.authors;
-create policy "Authors are public readable"
+drop policy if exists "Authors linked to published recipes are public readable" on public.authors;
+create policy "Authors linked to published recipes are public readable"
 on public.authors
 for select
 to public
-using (true);
+using (
+	exists (
+		select 1
+		from public.recipe_authors
+		join public.recipes on public.recipes.id = public.recipe_authors.recipe_id
+		where public.recipe_authors.author_id = public.authors.id
+			and public.recipes.status = 'published'
+	)
+);
 
 drop policy if exists "Published recipe authors are public readable" on public.recipe_authors;
 create policy "Published recipe authors are public readable"

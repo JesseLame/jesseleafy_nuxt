@@ -1,7 +1,16 @@
-import type { RecipeIngredientSection, RecipeLang } from '~/types/recipe';
+import {
+	RECIPE_STATUSES,
+	type RecipeIngredientSection,
+	type RecipeLang,
+	type RecipeStatus,
+} from '~/types/recipe';
 
 export function isRecipeLang(value: unknown): value is RecipeLang {
 	return value === 'en' || value === 'nl';
+}
+
+export function isRecipeStatus(value: unknown): value is RecipeStatus {
+	return typeof value === 'string' && RECIPE_STATUSES.includes(value as RecipeStatus);
 }
 
 export function buildRecipePath(lang: RecipeLang, slug: string) {

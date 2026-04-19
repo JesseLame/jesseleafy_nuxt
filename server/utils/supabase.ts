@@ -35,6 +35,32 @@ export function getServerSupabaseClient(event: H3Event) {
 	});
 }
 
+export function getServerSupabaseAuthenticatedClient(event: H3Event, accessToken: string) {
+	const config = useRuntimeConfig(event);
+	const supabaseUrl = getServerSupabaseUrl(event);
+	const supabasePublishableKey = config.public.supabasePublishableKey?.trim();
+
+	if (!supabaseUrl || !supabasePublishableKey) {
+		throw createError({
+			statusCode: 503,
+			statusMessage: 'Supabase authentication is unavailable because the public client is not configured.',
+		});
+	}
+
+	return createClient(supabaseUrl, supabasePublishableKey, {
+		global: {
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+			},
+		},
+		auth: {
+			autoRefreshToken: false,
+			persistSession: false,
+			detectSessionInUrl: false,
+		},
+	});
+}
+
 export function getServerSupabaseAdminClient(event: H3Event) {
 	const config = useRuntimeConfig(event);
 	const supabaseUrl = getServerSupabaseUrl(event);

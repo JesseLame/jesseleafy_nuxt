@@ -8,6 +8,7 @@ const recipe = defineModel<AdminRecipeRecord | null>({ required: false });
 const props = defineProps<{
 	loading: boolean;
 	isSaving: boolean;
+	isTranslating: boolean;
 	isDirty: boolean;
 	errorMessage: string;
 	saveMessage: string;
@@ -23,6 +24,7 @@ const emit = defineEmits<{
 	save: [];
 	'select-image-file': [file: File | null];
 	reset: [];
+	translate: [sourceLocale: RecipeLang];
 }>();
 
 const activeLocale = ref<RecipeLang>('en');
@@ -55,6 +57,19 @@ const localeTabs = computed(() => {
 		title: recipe.value?.translations[locale].title || 'Untitled locale',
 		exists: recipe.value?.translations[locale].exists ?? false,
 	}));
+});
+
+const translateTargetLabel = computed(() => (activeLocale.value === 'en' ? 'Dutch' : 'English'));
+
+const canTranslateActiveLocale = computed(() => {
+	if (!activeTranslation.value) {
+		return false;
+	}
+
+	return Boolean(
+		activeTranslation.value.title.trim()
+		&& activeTranslation.value.description.trim()
+	);
 });
 
 const formatDateTime = (value: string) => {
@@ -454,9 +469,20 @@ watch(
 						</p>
 					</div>
 
-					<p class="text-xs uppercase tracking-[0.16em] text-[var(--board-muted)]">
-						Deleting a locale is not supported in v1.
-					</p>
+					<div class="flex flex-wrap items-center justify-end gap-3">
+						<p class="text-xs uppercase tracking-[0.16em] text-[var(--board-muted)]">
+							Deleting a locale is not supported in v1.
+						</p>
+
+						<button
+							type="button"
+							class="board-studio-button board-studio-button-secondary"
+							:disabled="props.loading || props.isSaving || props.isTranslating || !canTranslateActiveLocale"
+							@click="emit('translate', activeLocale)"
+						>
+							{{ props.isTranslating ? `Translating into ${translateTargetLabel}...` : `Translate into ${translateTargetLabel}` }}
+						</button>
+					</div>
 				</div>
 
 				<div class="mt-5 grid gap-3 md:grid-cols-2">

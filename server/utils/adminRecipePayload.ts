@@ -1,6 +1,13 @@
-import type { AdminRecipeRecord, AdminRecipeTranslationRecord, AdminRecipeUpdatePayload, RecipeLang } from '~/types/recipe';
+import type {
+	AdminRecipeLocalizedFields,
+	AdminRecipeRecord,
+	AdminRecipeTranslatePayload,
+	AdminRecipeTranslationRecord,
+	AdminRecipeUpdatePayload,
+	RecipeLang,
+} from '~/types/recipe';
 import { RECIPE_LANGUAGES } from '~/types/recipe';
-import { isRecipeStatus, normalizeIngredientSections, normalizeInstructionSections } from '~/utils/recipe';
+import { isRecipeLang, isRecipeStatus, normalizeIngredientSections, normalizeInstructionSections } from '~/utils/recipe';
 
 function createPayloadError(statusMessage: string) {
 	return createError({
@@ -54,39 +61,45 @@ function getLocaleLabel(locale: RecipeLang) {
 	return locale === 'en' ? 'English' : 'Dutch';
 }
 
+function normalizeLocalizedFields(source: unknown): AdminRecipeLocalizedFields {
+	const translation = isRecord(source) ? source : {};
+	return {
+		title: normalizeString(translation.title),
+		description: normalizeString(translation.description),
+		bodyMarkdown: normalizeNullableString(translation.bodyMarkdown),
+		ingredientSections: normalizeIngredientSections(translation.ingredientSections),
+		instructionSections: normalizeInstructionSections(translation.instructionSections),
+	};
+}
+
+function hasLocalizedContent(translation: AdminRecipeLocalizedFields) {
+	return Boolean(
+		translation.title
+		|| translation.description
+		|| translation.bodyMarkdown
+		|| translation.ingredientSections.length
+		|| translation.instructionSections.length
+	);
+}
+
 function normalizeTranslation(
 	locale: RecipeLang,
 	source: unknown,
 	currentTranslation: AdminRecipeTranslationRecord
 ): AdminRecipeTranslationRecord {
-	const translation = isRecord(source) ? source : {};
-	const title = normalizeString(translation.title);
-	const description = normalizeString(translation.description);
-	const bodyMarkdown = normalizeNullableString(translation.bodyMarkdown);
-	const ingredientSections = normalizeIngredientSections(translation.ingredientSections);
-	const instructionSections = normalizeInstructionSections(translation.instructionSections);
-	const hasContent = Boolean(
-		title
-		|| description
-		|| bodyMarkdown
-		|| ingredientSections.length
-		|| instructionSections.length
-	);
+	const translation = normalizeLocalizedFields(source);
+	const hasContent = hasLocalizedContent(translation);
 
 	if (!hasContent && currentTranslation.exists) {
 		throw createPayloadError(`${getLocaleLabel(locale)} content already exists. Removing translations is not supported yet.`);
 	}
 
-	if (hasContent && (!title || !description)) {
+	if (hasContent && (!translation.title || !translation.description)) {
 		throw createPayloadError(`${getLocaleLabel(locale)} content needs both a title and description before it can be saved.`);
 	}
 
 	return {
-		title,
-		description,
-		bodyMarkdown,
-		ingredientSections,
-		instructionSections,
+		...translation,
 		exists: currentTranslation.exists || hasContent,
 	};
 }
@@ -128,5 +141,34 @@ export function parseAdminRecipeUpdatePayload(body: unknown, currentRecipe: Admi
 		tags: normalizeTags(body.tags),
 		createdOn,
 		translations,
+	};
+}
+
+export function parseAdminRecipeTranslatePayload(body: unknown): AdminRecipeTranslatePayload {
+	if (!isRecord(body)) {
+		throw createPayloadError('Provide a valid translation payload.');
+	}
+
+	const sourceLocale = body.sourceLocale;
+	const targetLocale = body.targetLocale;
+
+	if (!isRecipeLang(sourceLocale) || !isRecipeLang(targetLocale)) {
+		throw createPayloadError('Choose valid recipe languages for translation.');
+	}
+
+	if (sourceLocale === targetLocale) {
+		throw createPayloadError('Choose different source and target languages for translation.');
+	}
+
+	const source = normalizeLocalizedFields(body.source);
+
+	if (!source.title || !source.description) {
+		throw createPayloadError(`${getLocaleLabel(sourceLocale)} content needs both a title and description before it can be translated.`);
+	}
+
+	return {
+		sourceLocale,
+		targetLocale,
+		source,
 	};
 }

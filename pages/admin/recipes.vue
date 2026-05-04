@@ -4,10 +4,12 @@ import RecipeAdminEditorPanel from '~/components/admin/RecipeAdminEditorPanel.vu
 import RecipeAdminListPanel from '~/components/admin/RecipeAdminListPanel.vue';
 import {
 	RECIPE_STATUSES,
+	type AdminRecipeLocalizedFields,
 	type AdminRecipeListStatusFilter,
 	type AdminRecipeRecord,
 	type AdminRecipeSummary,
 	type AdminRecipeUpdatePayload,
+	type RecipeLang,
 	type RecipeStatus,
 } from '~/types/recipe';
 import {
@@ -32,7 +34,7 @@ useSeoMeta({
 const route = useRoute();
 const router = useRouter();
 const { isAuthenticated, isAdmin, isLoading } = useAuth();
-const { createRecipe, getRecipe, listRecipes, updateRecipe } = useRecipeAdmin();
+const { createRecipe, getRecipe, listRecipes, translateRecipe, updateRecipe } = useRecipeAdmin();
 const { deleteRecipeImage, resolveRecipeImagePreviewUrl, uploadRecipeImage } = useRecipeImages();
 
 const recipes = ref<AdminRecipeSummary[]>([]);
@@ -46,6 +48,7 @@ const loadingRecipes = ref(false);
 const loadingRecipe = ref(false);
 const creatingRecipe = ref(false);
 const savingRecipe = ref(false);
+const translatingRecipe = ref(false);
 const listError = ref('');
 const editorError = ref('');
 const saveMessage = ref('');
@@ -150,6 +153,41 @@ function buildUpdatePayload(recipe: AdminRecipeRecord, imagePathOverride = recip
 			nl: cloneRecipeRecord(recipe).translations.nl,
 		},
 	};
+}
+
+function getLocaleLabel(locale: RecipeLang) {
+	return locale === 'en' ? 'English' : 'Dutch';
+}
+
+function getTargetLocale(locale: RecipeLang): RecipeLang {
+	return locale === 'en' ? 'nl' : 'en';
+}
+
+function cloneLocalizedFields(translation: AdminRecipeLocalizedFields): AdminRecipeLocalizedFields {
+	return {
+		title: translation.title,
+		description: translation.description,
+		bodyMarkdown: translation.bodyMarkdown,
+		ingredientSections: translation.ingredientSections.map((section) => ({
+			title: section.title,
+			items: [...section.items],
+		})),
+		instructionSections: translation.instructionSections.map((section) => ({
+			title: section.title,
+			steps: [...section.steps],
+		})),
+	};
+}
+
+function hasLocalizedContent(translation: AdminRecipeRecord['translations'][RecipeLang]) {
+	return Boolean(
+		translation.exists
+		|| translation.title.trim()
+		|| translation.description.trim()
+		|| translation.bodyMarkdown?.trim()
+		|| translation.ingredientSections.length
+		|| translation.instructionSections.length
+	);
 }
 
 function clearPendingImageState() {
@@ -444,6 +482,64 @@ async function handleSave() {
 	}
 }
 
+async function handleTranslate(sourceLocale: RecipeLang) {
+	if (!draftRecipe.value || translatingRecipe.value || savingRecipe.value) {
+		return;
+	}
+
+	const recipeId = draftRecipe.value.id;
+	const targetLocale = getTargetLocale(sourceLocale);
+	const sourceTranslation = draftRecipe.value.translations[sourceLocale];
+	const targetTranslation = draftRecipe.value.translations[targetLocale];
+
+	if (!sourceTranslation.title.trim() || !sourceTranslation.description.trim()) {
+		editorError.value = `${getLocaleLabel(sourceLocale)} content needs both a title and description before it can be translated.`;
+		return;
+	}
+
+	if (import.meta.client && hasLocalizedContent(targetTranslation)) {
+		const confirmed = window.confirm(
+			`${getLocaleLabel(targetLocale)} content already exists for this recipe. Replace the current ${getLocaleLabel(targetLocale).toLowerCase()} draft with a fresh translation from ${getLocaleLabel(sourceLocale).toLowerCase()}?`
+		);
+
+		if (!confirmed) {
+			return;
+		}
+	}
+
+	translatingRecipe.value = true;
+	editorError.value = '';
+	saveMessage.value = '';
+
+	try {
+		const response = await translateRecipe(recipeId, {
+			sourceLocale,
+			targetLocale,
+			source: cloneLocalizedFields(sourceTranslation),
+		});
+
+		if (!draftRecipe.value || draftRecipe.value.id !== recipeId) {
+			return;
+		}
+
+		draftRecipe.value.translations[response.targetLocale] = {
+			...cloneLocalizedFields(response.translation),
+			exists: draftRecipe.value.translations[response.targetLocale].exists,
+		};
+		saveMessage.value = `${getLocaleLabel(response.targetLocale)} draft refreshed from ${getLocaleLabel(sourceLocale)}. Review it, then save the recipe to persist the translation.`;
+	} catch (error) {
+		console.error('[recipe-admin] Recipe translation failed', {
+			recipeId,
+			sourceLocale,
+			targetLocale,
+			error,
+		});
+		editorError.value = getErrorMessage(error, 'Unable to translate this recipe right now.');
+	} finally {
+		translatingRecipe.value = false;
+	}
+}
+
 function handleReset() {
 	if (!savedRecipe.value) {
 		return;
@@ -695,6 +791,7 @@ onBeforeUnmount(() => {
 					v-model="draftRecipe"
 					:loading="loadingRecipe"
 					:is-saving="savingRecipe"
+					:is-translating="translatingRecipe"
 					:is-dirty="isDirty"
 					:error-message="editorError"
 					:image-error="imageError"
@@ -707,6 +804,7 @@ onBeforeUnmount(() => {
 					@reset="handleReset"
 					@save="handleSave"
 					@select-image-file="handleImageFileSelection"
+					@translate="handleTranslate"
 				/>
 			</div>
 		</template>

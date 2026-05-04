@@ -1,9 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
+	AdminRecipeLocalizedFields,
 	AdminRecipeListParams,
 	AdminRecipeListResponse,
 	AdminRecipeRecord,
+	AdminRecipeTranslateResponse,
 	AdminRecipeUpdatePayload,
+	RecipeLang,
 } from '~/types/recipe';
 
 function getSupabaseClient() {
@@ -64,10 +67,26 @@ export function useRecipeAdmin() {
 		});
 	};
 
+	const translateRecipe = async (
+		recipeId: string,
+		payload: {
+			sourceLocale: RecipeLang;
+			targetLocale: RecipeLang;
+			source: AdminRecipeLocalizedFields;
+		}
+	) => {
+		return $fetch<AdminRecipeTranslateResponse>(`/api/admin/recipes/${recipeId}/translate`, {
+			method: 'POST',
+			body: payload,
+			headers: await requireAdminHeaders(),
+		});
+	};
+
 	return {
 		createRecipe,
 		listRecipes,
 		getRecipe,
+		translateRecipe,
 		updateRecipe,
 	};
 }

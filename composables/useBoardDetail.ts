@@ -44,6 +44,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 		createBoardRelation,
 		createConceptFromBoardItems,
 		createIdea,
+		deleteBoard,
 		deleteBoardRelations,
 		deleteBoardItems,
 		deleteBoardRelation,
@@ -51,6 +52,7 @@ export function useBoardDetail(boardId: Ref<string>) {
 		duplicateConcept,
 		loadBoardSnapshot,
 		removeBoardItemsFromConcept,
+		updateBoard,
 		updateBoardItemPosition,
 		updateBoardRelation,
 		updateIdea,
@@ -66,8 +68,13 @@ export function useBoardDetail(boardId: Ref<string>) {
 
 	const pageError = ref('');
 	const loadingBoard = ref(false);
+	const isDeletingBoard = ref(false);
+	const isEditingBoard = ref(false);
+	const isSavingBoard = ref(false);
 	const isSavingIdea = ref(false);
 	const conceptBusyId = ref<string | null>(null);
+	const boardTitleDraft = ref('');
+	const boardDescriptionDraft = ref('');
 
 	const ideaTitle = ref('');
 	const ideaType = ref<IdeaType>('technique');
@@ -232,6 +239,11 @@ export function useBoardDetail(boardId: Ref<string>) {
 
 		clearTimeout(ideaVideoPreviewTimer);
 		ideaVideoPreviewTimer = null;
+	};
+
+	const syncBoardDrafts = (nextBoard: Board | null) => {
+		boardTitleDraft.value = nextBoard?.title ?? '';
+		boardDescriptionDraft.value = nextBoard?.description ?? '';
 	};
 
 	const syncIdeaImagePreview = async () => {
@@ -614,6 +626,73 @@ export function useBoardDetail(boardId: Ref<string>) {
 			pageError.value = error instanceof Error ? error.message : 'Unable to load this board right now.';
 		} finally {
 			loadingBoard.value = false;
+		}
+	};
+
+	const handleStartBoardEditing = () => {
+		syncBoardDrafts(board.value);
+		isEditingBoard.value = true;
+		pageError.value = '';
+	};
+
+	const handleCancelBoardEditing = () => {
+		syncBoardDrafts(board.value);
+		isEditingBoard.value = false;
+		pageError.value = '';
+	};
+
+	const handleSaveBoard = async () => {
+		if (!board.value || !boardId.value) {
+			pageError.value = 'Unable to save this board right now.';
+			return;
+		}
+
+		if (!boardTitleDraft.value.trim()) {
+			pageError.value = 'Boards need a title.';
+			return;
+		}
+
+		pageError.value = '';
+		isSavingBoard.value = true;
+
+		try {
+			const updatedBoard = await updateBoard(boardId.value, {
+				title: boardTitleDraft.value,
+				description: boardDescriptionDraft.value,
+			});
+
+			board.value = updatedBoard;
+			syncBoardDrafts(updatedBoard);
+			isEditingBoard.value = false;
+		} catch (error) {
+			pageError.value = error instanceof Error ? error.message : 'Unable to save this board right now.';
+		} finally {
+			isSavingBoard.value = false;
+		}
+	};
+
+	const handleDeleteBoard = async () => {
+		if (!board.value || !boardId.value) {
+			pageError.value = 'Unable to delete this board right now.';
+			return;
+		}
+
+		const confirmed = window.confirm(`Delete "${board.value.title}" permanently? This removes the board, its cards, links, and concepts.`);
+
+		if (!confirmed) {
+			return;
+		}
+
+		pageError.value = '';
+		isDeletingBoard.value = true;
+
+		try {
+			await deleteBoard(boardId.value);
+			await navigateTo('/boards?deleted=1', { replace: true });
+		} catch (error) {
+			pageError.value = error instanceof Error ? error.message : 'Unable to delete this board right now.';
+		} finally {
+			isDeletingBoard.value = false;
 		}
 	};
 
@@ -1288,6 +1367,14 @@ export function useBoardDetail(boardId: Ref<string>) {
 		{ immediate: true }
 	);
 
+	watch(board, (nextBoard) => {
+		syncBoardDrafts(nextBoard);
+	}, { immediate: true });
+
+	watch(boardId, () => {
+		isEditingBoard.value = false;
+	});
+
 	onBeforeUnmount(() => {
 		clearIdeaVideoPreviewTimer();
 		revokeIdeaPreviewObjectUrl();
@@ -1307,11 +1394,13 @@ export function useBoardDetail(boardId: Ref<string>) {
 		editingIdeaId,
 		editingBoardItemId,
 		filteredIdeas,
+		handleCancelBoardEditing,
 		handleBoardItemResizeEnd,
 		handleBoardItemsMoved,
 		handleCanvasSelectionChange,
 		handleCreateRelationFromCanvas,
 		handleCreateConcept,
+		handleDeleteBoard,
 		handleDeleteIdea,
 		handleDeleteEditingIdea,
 		handleRemoveEditingBoardItem,
@@ -1320,9 +1409,13 @@ export function useBoardDetail(boardId: Ref<string>) {
 		handleDuplicateConcept,
 		handleIdeaImageFileSelected,
 		handlePlaceIdea,
+		handleSaveBoard,
 		handleSaveIdea,
 		handleSaveSelectedRelation,
+		handleStartBoardEditing,
 		handleUngroupSelection,
+		boardDescriptionDraft,
+		boardTitleDraft,
 		canRemoveIdeaImage,
 		ideaDescription,
 		ideaImageError,
@@ -1336,7 +1429,10 @@ export function useBoardDetail(boardId: Ref<string>) {
 		ideaTagsInput,
 		ideaTitle,
 		ideaType,
+		isEditingBoard,
 		isIdeaEditorModalOpen,
+		isDeletingBoard,
+		isSavingBoard,
 		isWorkspaceOpen,
 		isSavingIdea,
 		ideaEditorModalTitle,

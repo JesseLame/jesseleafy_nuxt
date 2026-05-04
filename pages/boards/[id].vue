@@ -18,8 +18,10 @@ const {
 	allTags,
 	activeWorkspaceSection,
 	board,
+	boardDescriptionDraft,
 	boardItems,
 	boardRelations,
+	boardTitleDraft,
 	boardReady,
 	canRemoveIdeaImage,
 	beginRelationEditing,
@@ -31,11 +33,13 @@ const {
 	editingIdeaId,
 	editingBoardItemId,
 	filteredIdeas,
+	handleCancelBoardEditing,
 	handleBoardItemResizeEnd,
 	handleBoardItemsMoved,
 	handleCanvasSelectionChange,
 	handleCreateRelationFromCanvas,
 	handleCreateConcept,
+	handleDeleteBoard,
 	handleDeleteIdea,
 	handleRemoveEditingBoardItem,
 	handleDeleteSelection,
@@ -43,8 +47,10 @@ const {
 	handleDuplicateConcept,
 	handleIdeaImageFileSelected,
 	handlePlaceIdea,
+	handleSaveBoard,
 	handleSaveIdea,
 	handleSaveSelectedRelation,
+	handleStartBoardEditing,
 	handleUngroupSelection,
 	ideaDescription,
 	ideaEditorModalTitle,
@@ -58,7 +64,10 @@ const {
 	ideaTagsInput,
 	ideaTitle,
 	ideaType,
+	isEditingBoard,
 	isIdeaEditorModalOpen,
+	isDeletingBoard,
+	isSavingBoard,
 	isWorkspaceOpen,
 	isSavingIdea,
 	libraryTagFilter,
@@ -126,7 +135,20 @@ watch(
 
 <template>
 	<div class="board-studio board-studio-page mx-auto flex min-h-screen w-full max-w-[1640px] flex-col gap-6 px-4 py-6 sm:px-6">
-		<BoardHeader :board="board" :loading-board="loadingBoard" @refresh="loadBoardData" />
+		<BoardHeader
+			:board="board"
+			v-model:board-title="boardTitleDraft"
+			v-model:board-description="boardDescriptionDraft"
+			:is-editing-board="isEditingBoard"
+			:is-deleting-board="isDeletingBoard"
+			:is-saving-board="isSavingBoard"
+			:loading-board="loadingBoard"
+			@cancel-editing="handleCancelBoardEditing"
+			@delete-board="handleDeleteBoard"
+			@refresh="loadBoardData"
+			@save-board="handleSaveBoard"
+			@start-editing="handleStartBoardEditing"
+		/>
 
 		<p v-if="pageError" class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
 			{{ pageError }}

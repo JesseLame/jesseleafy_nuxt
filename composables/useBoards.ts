@@ -167,6 +167,45 @@ export function useBoards() {
 		return data as Board;
 	};
 
+	const updateBoard = async (boardId: string, input: BoardInput): Promise<Board> => {
+		const client = requireSupabase();
+		const trimmedTitle = input.title.trim();
+
+		if (!trimmedTitle) {
+			throw new Error('Boards need a title.');
+		}
+
+		const { data, error } = await client
+			.from('boards')
+			.update({
+				title: trimmedTitle,
+				description: input.description?.trim() || null,
+				updated_at: new Date().toISOString(),
+			})
+			.eq('id', boardId)
+			.select('*')
+			.single();
+
+		if (error) {
+			throw error;
+		}
+
+		return data as Board;
+	};
+
+	const deleteBoard = async (boardId: string): Promise<void> => {
+		const client = requireSupabase();
+
+		const { error } = await client
+			.from('boards')
+			.delete()
+			.eq('id', boardId);
+
+		if (error) {
+			throw error;
+		}
+	};
+
 	const listIdeas = async (): Promise<Idea[]> => {
 		const client = requireSupabase();
 
@@ -904,6 +943,8 @@ export function useBoards() {
 		listBoards,
 		getBoard,
 		createBoard,
+		updateBoard,
+		deleteBoard,
 		listIdeas,
 		createIdea,
 		updateIdea,

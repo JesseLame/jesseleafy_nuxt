@@ -48,12 +48,15 @@ export interface RecipeDetail extends RecipeSummary, RecipeTranslation {
 	authors: RecipeAuthor[];
 }
 
-export interface AdminRecipeTranslationRecord {
+export interface AdminRecipeLocalizedFields {
 	title: string;
 	description: string;
 	bodyMarkdown: string | null;
 	ingredientSections: RecipeIngredientSection[];
 	instructionSections: RecipeInstructionSection[];
+}
+
+export interface AdminRecipeTranslationRecord extends AdminRecipeLocalizedFields {
 	exists: boolean;
 }
 
@@ -110,4 +113,15 @@ export interface AdminRecipeUpdatePayload {
 	tags: string[];
 	createdOn: string;
 	translations: Record<RecipeLang, AdminRecipeTranslationRecord>;
+}
+
+export interface AdminRecipeTranslatePayload {
+	sourceLocale: RecipeLang;
+	targetLocale: RecipeLang;
+	source: AdminRecipeLocalizedFields;
+}
+
+export interface AdminRecipeTranslateResponse {
+	targetLocale: RecipeLang;
+	translation: AdminRecipeLocalizedFields;
 }
